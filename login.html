@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kunston | Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 h-screen flex items-center justify-center font-['Inter']">
+
+    <div class="bg-white p-10 rounded-2xl shadow-xl w-full max-w-md border-t-8 border-[#003153]">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-black uppercase text-[#003153] tracking-tighter">Kunston</h1>
+            <p class="text-[10px] font-bold text-gray-400 tracking-[0.3em] uppercase mt-2">Sistema de Gestión Privado</p>
+        </div>
+
+        <form id="loginForm" class="space-y-6" onsubmit="iniciarSesion(event)">
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Correo Electrónico</label>
+                <input type="email" id="email" required class="w-full border-2 border-gray-100 p-3 rounded-lg font-bold focus:border-[#003153] outline-none transition-colors" placeholder="admin@kunston.com">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Contraseña</label>
+                <input type="password" id="password" required class="w-full border-2 border-gray-100 p-3 rounded-lg font-bold focus:border-[#003153] outline-none transition-colors" placeholder="••••••••">
+            </div>
+
+            <button type="submit" id="btn-login" class="w-full bg-[#003153] text-white py-4 rounded-lg font-black uppercase text-[11px] tracking-widest hover:bg-black transition-all shadow-lg mt-4">
+                Ingresar al Sistema
+            </button>
+        </form>
+        
+        <p id="mensaje-error" class="text-red-500 text-[11px] font-bold text-center mt-4 hidden">Credenciales incorrectas.</p>
+    </div>
+
+    <script>
+		
+		
+		
+        // Conexión a Supabase (Tus mismas credenciales)
+        const SUPABASE_URL = 'https://ydplbvargkztuncrmawn.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_zrErxvRH8Ac8NG0iRKm_qA_r18Uk9Nk';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+		
+		// NUEVA FUNCIÓN: EL CANDADO (Agrégala aquí)
+        async function verificarSeguridad() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                // Si no hay sesión activa, redirige al login de inmediato
+                window.location.replace('login.html'); 
+            }
+        }
+
+        // 2. INICIO (Reemplaza tu bloque actual por este)
+        window.onload = async () => {
+            // Primero verificamos si el usuario tiene permiso
+            await verificarSeguridad(); 
+
+            // Si el código llega aquí, es porque hay una sesión activa
+            document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
+            generarCorrelativo(); 
+            obtenerTasaBCV(); 
+        };
+
+        // Si el usuario ya está logueado y abre esta página por error, lo mandamos al panel
+        window.onload = async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) window.location.href = 'index.html'; 
+        };
+
+        // Función que envía los datos a la bóveda de Supabase
+        async function iniciarSesion(e) {
+            e.preventDefault(); // Evita que la página parpadee
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('btn-login');
+            const errorMsg = document.getElementById('mensaje-error');
+
+            btn.innerText = "Verificando...";
+            btn.classList.add("opacity-50");
+            errorMsg.classList.add("hidden");
+
+            // Intento de login
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                btn.innerText = "Ingresar al Sistema";
+                btn.classList.remove("opacity-50");
+                errorMsg.innerText = "❌ Correo o contraseña incorrectos.";
+                errorMsg.classList.remove("hidden");
+            } else {
+                btn.innerText = "✅ Acceso Concedido";
+                btn.classList.remove("bg-[#003153]");
+                btn.classList.add("bg-green-600");
+                
+                // Espera 1 segundo y lo teletransporta al facturador
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            }
+        }
+    </script>
+</body>
+</html>

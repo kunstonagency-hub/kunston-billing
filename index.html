@@ -165,6 +165,26 @@
         const SUPABASE_URL = 'https://ydplbvargkztuncrmawn.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_zrErxvRH8Ac8NG0iRKm_qA_r18Uk9Nk';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+	
+	// NUEVA FUNCIÓN: EL CANDADO (Agrégala aquí)
+        async function verificarSeguridad() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                // Si no hay sesión activa, redirige al login de inmediato
+                window.location.replace('login.html'); 
+            }
+        }
+
+        // 2. INICIO (Reemplaza tu bloque actual por este)
+        window.onload = async () => {
+            // Primero verificamos si el usuario tiene permiso
+            await verificarSeguridad(); 
+
+            // Si el código llega aquí, es porque hay una sesión activa
+            document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
+            generarCorrelativo(); 
+            obtenerTasaBCV(); 
+        };
 
        // 2. INICIO
         window.onload = () => {
