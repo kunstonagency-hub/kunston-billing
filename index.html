@@ -187,7 +187,7 @@
                 console.log("⏳ Conectando con el Banco Central (Euro)...");
                 
                 // AQUÍ ESTÁ EL CAMBIO: Ahora pedimos los Euros
-                const respuesta = await fetch('https://ve.dolarapi.com/v1/euros');
+                const respuesta = await fetch('https://ve.dolarapi.com/v1/euros/oficial');
                 
                 if (!respuesta.ok) throw new Error("La API no respondió correctamente");
                 
