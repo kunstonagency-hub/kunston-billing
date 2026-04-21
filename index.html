@@ -163,42 +163,42 @@
         const SUPABASE_KEY = 'sb_publishable_zrErxvRH8Ac8NG0iRKm_qA_r18Uk9Nk';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 2. INICIO
-        window.onload = async () => {
+       // 2. INICIO
+        window.onload = () => {
+            // El "gatillo" automático al abrir la página
             document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
-            await generarCorrelativo();
-			await obtenerTasaBCV(); // <--- EL SISTEMA AHORA BUSCARÁ LA TASA AL INICIAR
-			
-        }
+            
+            // Le quitamos el "await" para que corran en paralelo y no se estorben
+            generarCorrelativo(); 
+            obtenerTasaBCV(); 
+        };
 
         // 3. FUNCIONES DE CÁLCULO
-        function actualizarDocumento() {
-            const tipo = document.getElementById('tipo_doc').value;
-            document.getElementById('titulo_factura').innerText = tipo;
-            calcularTodo();
-        }
+        // ... (tu función actualizarDocumento se queda igual) ...
 
-		// Extraer tasa BCV automáticamente
+        // Extraer tasa BCV automáticamente
         async function obtenerTasaBCV() {
+            const inputTasa = document.getElementById('tasa_bcv');
+            
+            // Si ya hay un número (porque cargaste una factura vieja), abortamos.
+            if (inputTasa.value) return; 
+
             try {
-                // Hacemos la consulta a la API pública para Venezuela (Dólar Oficial)
+                console.log("⏳ Conectando con el Banco Central...");
+                
                 const respuesta = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+                
+                if (!respuesta.ok) throw new Error("La API no respondió correctamente");
+                
                 const datos = await respuesta.json();
                 
                 if (datos && datos.promedio) {
-                    const inputTasa = document.getElementById('tasa_bcv');
-                    
-                    // Solo lo llenamos si el campo está vacío
-                    // Así no te borramos la tasa si estás cargando una factura vieja
-                    if (!inputTasa.value) {
-                        inputTasa.value = datos.promedio.toFixed(2);
-                        calcularTodo(); // Actualizamos los bolívares de inmediato
-                    }
+                    inputTasa.value = datos.promedio.toFixed(2);
+                    calcularTodo(); // Actualizamos los bolívares de inmediato
+                    console.log("✅ Tasa BCV obtenida con éxito:", datos.promedio);
                 }
             } catch (error) {
-                // Si la API falla o el internet está inestable, no pasa nada
-                // Simplemente no lo llena y lo pones manual como siempre.
-                console.warn("⚠️ No se pudo obtener la tasa automática:", error);
+                console.warn("⚠️ Error obteniendo la tasa automática. Ingresa la tasa manualmente.", error);
             }
         }
 
