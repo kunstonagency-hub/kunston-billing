@@ -176,7 +176,7 @@
         // 3. FUNCIONES DE CÁLCULO
         // ... (tu función actualizarDocumento se queda igual) ...
 
-        // Extraer tasa BCV automáticamente
+        // Extraer tasa BCV (EURO) automáticamente
         async function obtenerTasaBCV() {
             const inputTasa = document.getElementById('tasa_bcv');
             
@@ -184,9 +184,10 @@
             if (inputTasa.value) return; 
 
             try {
-                console.log("⏳ Conectando con el Banco Central...");
+                console.log("⏳ Conectando con el Banco Central (Euro)...");
                 
-                const respuesta = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+                // AQUÍ ESTÁ EL CAMBIO: Ahora pedimos los Euros
+                const respuesta = await fetch('https://ve.dolarapi.com/v1/euros');
                 
                 if (!respuesta.ok) throw new Error("La API no respondió correctamente");
                 
@@ -195,7 +196,7 @@
                 if (datos && datos.promedio) {
                     inputTasa.value = datos.promedio.toFixed(2);
                     calcularTodo(); // Actualizamos los bolívares de inmediato
-                    console.log("✅ Tasa BCV obtenida con éxito:", datos.promedio);
+                    console.log("✅ Tasa Euro BCV obtenida con éxito:", datos.promedio);
                 }
             } catch (error) {
                 console.warn("⚠️ Error obteniendo la tasa automática. Ingresa la tasa manualmente.", error);
