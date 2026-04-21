@@ -167,13 +167,39 @@
         window.onload = async () => {
             document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
             await generarCorrelativo();
-        };
+			await obtenerTasaBCV(); // <--- EL SISTEMA AHORA BUSCARÁ LA TASA AL INICIAR
+			
+        }
 
         // 3. FUNCIONES DE CÁLCULO
         function actualizarDocumento() {
             const tipo = document.getElementById('tipo_doc').value;
             document.getElementById('titulo_factura').innerText = tipo;
             calcularTodo();
+        }
+
+		// Extraer tasa BCV automáticamente
+        async function obtenerTasaBCV() {
+            try {
+                // Hacemos la consulta a la API pública para Venezuela (Dólar Oficial)
+                const respuesta = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
+                const datos = await respuesta.json();
+                
+                if (datos && datos.promedio) {
+                    const inputTasa = document.getElementById('tasa_bcv');
+                    
+                    // Solo lo llenamos si el campo está vacío
+                    // Así no te borramos la tasa si estás cargando una factura vieja
+                    if (!inputTasa.value) {
+                        inputTasa.value = datos.promedio.toFixed(2);
+                        calcularTodo(); // Actualizamos los bolívares de inmediato
+                    }
+                }
+            } catch (error) {
+                // Si la API falla o el internet está inestable, no pasa nada
+                // Simplemente no lo llena y lo pones manual como siempre.
+                console.warn("⚠️ No se pudo obtener la tasa automática:", error);
+            }
         }
 
         function calcularTodo() {
