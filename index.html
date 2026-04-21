@@ -8,34 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
-    <style>
-        :root { --kunston-red: #E31E24; --kunston-orange: #F7941D; --prussian-blue: #003153; }
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; padding: 20px; color: #1f2937; }
-        
-        /* Contenedor para impresión A4 exacta */
-        #factura-container {
-            width: 210mm;
-            min-height: 297mm;
-            padding: 18mm;
-            margin: auto;
-            background: white;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            position: relative;
-        }
-
-        .gradient-line { background: linear-gradient(90deg, var(--kunston-red), var(--kunston-orange)); height: 4px; }
-        .logo-wrapper { width: 170px; }
-        .logo-wrapper img { width: 100%; height: auto; display: block; }
-        
-        .bs-pdf-box { border: 1px solid #f3f4f6; padding: 12px; border-radius: 6px; background-color: #fafafa; margin-top: 10px; }
-        
-        /* Quitar bordes de inputs en el PDF */
-        .factura-input { border-bottom: 1px solid transparent; transition: border-color 0.2s; }
-        .factura-input:focus { border-bottom: 1px solid var(--kunston-orange); outline: none; }
-        .factura-input::placeholder { color: #d1d5db; }
-
-        @media print { .no-print { display: none !important; } }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -123,13 +96,34 @@
 
         <section class="flex flex-col md:flex-row justify-between items-start gap-12">
             <div class="w-full md:w-1/2">
-                <div id="bs_display_area" class="hidden bs-pdf-box border-l-4 border-[#E31E24]">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Equivalente en Bolívares</p>
+               
+				<div id="bs_display_area" class="hidden bs-pdf-box border-l-4 border-[#E31E24]">
+            		<div class="flex justify-between items-start">
+               		 <div class="flex-1">
+                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Bolívares</p>
                     <div id="total_bs_text" class="text-2xl font-black text-[#E31E24] my-1">0,00 Bs.</div>
-                    <p class="text-[8px] text-gray-400 leading-tight italic font-medium">
-                        ⚠️ Este monto es referencial y tiene una vigencia de 24 horas.
-                    </p>
-                </div>
+                    <p class="text-[8px] text-gray-400 italic mb-4">⚠️ Válido por 24 horas.</p>
+
+                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Datos de Pagomóvil BDV</p>
+                    <div class="text-[10px] text-gray-700 leading-relaxed font-bold">
+                        Cédula: <span class="font-normal">V18332193</span><br>
+                        Teléfono: <span class="font-normal">04245763648</span><br>
+                        Banco: <span class="font-normal">0102 - Banco de Venezuela</span>
+                	</div>
+                	</div>
+
+                	<div class="ml-4 text-center">
+                    <img src="qr-gustavo-bdv.png" alt="QR Pago" class="w-20 h-20 border p-1 bg-white shadow-sm">
+                    <p class="text-[7px] text-gray-400 uppercase font-bold mt-1">Escanea y Paga</p>
+                	</div>
+            	</div>
+            
+            <a href="https://bdvdigital.banvenez.com/pagomovil?id=V18332193&phone=584245763648&bank=0102&description=9dxBliWt4XnVSB0LTqNasQ%3D%3D" 
+               target="_blank" 
+               class="inline-block mt-4 bg-[#E31E24] text-white text-[9px] font-black py-2 px-6 rounded-full uppercase tracking-tighter hover:bg-black transition-all">
+               Pagar con App BDV
+            </a>
+        </div>
             </div>
 
             <div class="w-full md:w-1/3 space-y-3 pt-4">
@@ -237,10 +231,20 @@
             const opt = {
                 margin: 0,
                 filename: `Kunston_${d.tipo}_${nombre}.pdf`,
-                html2canvas: { scale: 3, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 3, 
+                    useCORS: true,
+                    letterRendering: true,
+                    scrollY: 0 // <--- ESTO ES LO QUE EVITA EL SALTO DE PÁGINA
+                },
+                jsPDF: { 
+                    unit: 'mm', 
+                    format: 'a4', 
+                    orientation: 'portrait',
+                    compress: true
+                }
             };
-
             await html2pdf().set(opt).from(document.getElementById('factura-container')).save();
             setTimeout(() => location.reload(), 1500);
         }
