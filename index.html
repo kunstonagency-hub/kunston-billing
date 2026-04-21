@@ -7,40 +7,65 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <style>
         :root { --kunston-red: #E31E24; --kunston-orange: #F7941D; --prussian-blue: #003153; }
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; padding: 20px; }
-        #factura-container { width: 210mm; min-height: 297mm; padding: 15mm; margin: auto; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); position: relative; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; padding: 20px; color: #1f2937; }
+        
+        /* Contenedor para impresión A4 exacta */
+        #factura-container {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 18mm;
+            margin: auto;
+            background: white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
         .gradient-line { background: linear-gradient(90deg, var(--kunston-red), var(--kunston-orange)); height: 4px; }
-        .logo-wrapper { width: 160px; height: auto; }
-        .logo-wrapper img { width: 100%; height: auto; }
-        .bs-pdf-box { border: 1px solid #eee; padding: 10px; border-radius: 4px; margin-top: 10px; background-color: #fafafa; }
+        .logo-wrapper { width: 170px; }
+        .logo-wrapper img { width: 100%; height: auto; display: block; }
+        
+        .bs-pdf-box { border: 1px solid #f3f4f6; padding: 12px; border-radius: 6px; background-color: #fafafa; margin-top: 10px; }
+        
+        /* Quitar bordes de inputs en el PDF */
+        .factura-input { border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+        .factura-input:focus { border-bottom: 1px solid var(--kunston-orange); outline: none; }
+        .factura-input::placeholder { color: #d1d5db; }
+
         @media print { .no-print { display: none !important; } }
     </style>
 </head>
 <body>
 
-    <div class="max-w-[210mm] mx-auto mb-6 no-print bg-white p-6 rounded-lg shadow-sm border-l-4 border-orange-500">
-        <h2 class="text-sm font-bold uppercase mb-4 text-gray-400 tracking-widest">Configuración del Documento</h2>
+    <div class="max-w-[210mm] mx-auto mb-8 no-print bg-white p-6 rounded-xl shadow-sm border-l-8 border-[#003153]">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Panel de Control Kunston</h2>
+            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold">v4.2 Stable</span>
+        </div>
+        
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
             <div>
-                <label class="block text-[10px] font-bold uppercase mb-1">Tipo de Documento</label>
-                <select id="tipo_doc" onchange="actualizarInterfaz()" class="w-full border p-2 rounded font-bold bg-gray-50">
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Tipo de Documento</label>
+                <select id="tipo_doc" onchange="actualizarDocumento()" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold bg-gray-50 focus:border-orange-500 outline-none">
                     <option value="Nota de Entrega">Nota de Entrega</option>
                     <option value="Factura de Servicio">Factura de Servicio</option>
                 </select>
             </div>
+
             <div>
-                <label class="block text-[10px] font-bold uppercase mb-1">Tasa BCV</label>
-                <input type="number" id="tasa_bcv" step="0.01" oninput="calcularTodo()" class="w-full border p-2 rounded font-bold" placeholder="Tasa Bs.">
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Tasa BCV del día</label>
+                <input type="number" id="tasa_bcv" step="0.01" oninput="calcularTodo()" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold focus:border-orange-500 outline-none" placeholder="Ej: 44.50">
             </div>
-            <div class="flex items-center gap-2 pb-3">
-                <input type="checkbox" id="check_bs" onchange="toggleBsView()" class="w-4 h-4 accent-orange-500">
-                <label for="check_bs" class="text-[10px] font-bold uppercase cursor-pointer">Mostrar Bs.</label>
+
+            <div class="flex items-center gap-3 pb-3">
+                <input type="checkbox" id="check_bs" onchange="toggleBsView()" class="w-5 h-5 accent-orange-500 cursor-pointer">
+                <label for="check_bs" class="text-[10px] font-bold uppercase text-gray-600 cursor-pointer">Mostrar Bolívares</label>
             </div>
+
             <div class="text-right">
-                <button onclick="guardarYGenerar()" class="bg-[#003153] text-white px-6 py-3 rounded-full font-bold hover:bg-black transition-all shadow-lg uppercase text-[10px]">
+                <button onclick="guardarYGenerar()" class="w-full bg-[#003153] text-white py-3 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all shadow-lg">
                     Generar y Guardar
                 </button>
             </div>
@@ -48,83 +73,83 @@
     </div>
 
     <div id="factura-container">
-        <div class="gradient-line mb-8"></div>
+        <div class="gradient-line mb-10"></div>
         
-        <header class="flex justify-between items-start mb-10 pb-6 border-b">
+        <header class="flex justify-between items-start mb-12 pb-8 border-b border-gray-50">
             <div>
-                <div class="logo-wrapper mb-2">
+                <div class="logo-wrapper mb-3">
                     <img src="logo_kunston_pdf.png" alt="Kunston Agency">
                 </div>
-                <p class="text-[10px] font-semibold text-gray-400 tracking-[0.2em] uppercase">Advertising Agency</p>
+                <p class="text-[11px] font-bold text-gray-400 tracking-[0.3em] uppercase">Advertising Agency</p>
             </div>
             <div class="text-right">
-                <h1 id="titulo_documento" class="text-2xl font-black uppercase text-gray-800 tracking-tighter">Nota de Entrega</h1>
-                <p class="text-gray-500 text-xs font-bold uppercase">N°: <span id="correlativo_display">K-0000</span></p>
-                <p class="text-gray-500 text-xs font-medium">Fecha: <span id="fecha-actual"></span></p>
+                <h1 id="titulo_factura" class="text-3xl font-black uppercase text-[#003153] tracking-tighter mb-1">Nota de Entrega</h1>
+                <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">N°: <span id="correlativo_display" class="text-gray-800">K-0000</span></p>
+                <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Fecha: <span id="fecha-actual" class="text-gray-800">--/--/----</span></p>
             </div>
         </header>
 
-        <section class="grid grid-cols-2 gap-12 mb-10">
-            <div class="space-y-2">
-                <h3 class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Información del Cliente</h3>
-                <div class="flex items-center gap-2 group">
-                    <input type="text" id="nombre" placeholder="Nombre o Razón Social" class="w-full border-b py-1 focus:outline-none font-bold text-gray-800 border-transparent focus:border-orange-500">
-                    <button onclick="buscarCliente()" class="no-print text-xs grayscale hover:grayscale-0 transition-all">🔍</button>
+        <section class="grid grid-cols-2 gap-16 mb-12">
+            <div class="space-y-4">
+                <h3 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Información del Cliente</h3>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="nombre" placeholder="Nombre o Razón Social" class="factura-input w-full py-1 font-black text-lg text-gray-800 border-b border-gray-100 focus:border-orange-500">
+                    <button onclick="buscarCliente()" class="no-print text-gray-300 hover:text-orange-500 transition-colors">🔍</button>
                 </div>
-                <input type="text" id="rif" placeholder="RIF / Cédula" class="w-full border-b border-transparent py-1 focus:outline-none text-sm">
+                <input type="text" id="rif" placeholder="RIF / Cédula" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100">
             </div>
-            <div class="space-y-2 pt-5">
-                <input type="text" id="telefono" placeholder="Teléfono" class="w-full border-b border-transparent py-1 focus:outline-none text-sm">
-                <input type="email" id="email" placeholder="Correo Electrónico" class="w-full border-b border-transparent py-1 focus:outline-none text-sm">
+            <div class="space-y-4 pt-8">
+                <input type="text" id="telefono" placeholder="Teléfono" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100">
+                <input type="email" id="email" placeholder="Correo Electrónico" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100">
             </div>
         </section>
 
-        <section class="mb-10">
+        <section class="mb-12">
             <table class="w-full text-left">
                 <thead>
-                    <tr class="border-b-2 border-gray-100">
-                        <th class="py-3 text-[9px] font-bold uppercase text-gray-400 tracking-widest">Descripción del Servicio</th>
-                        <th class="py-3 text-[9px] font-bold uppercase text-gray-400 text-right w-32 tracking-widest">Inversión (USD)</th>
+                    <tr class="border-b-2 border-gray-800">
+                        <th class="py-4 text-[10px] font-black uppercase text-gray-800 tracking-[0.2em]">Descripción del Servicio</th>
+                        <th class="py-4 text-[10px] font-black uppercase text-gray-800 text-right w-40 tracking-[0.2em]">Inversión (USD)</th>
                     </tr>
                 </thead>
-                <tbody id="filas-items">
-                    <tr class="border-b border-gray-50"><td class="py-3"><input type="text" class="w-full focus:outline-none text-sm desc-input" placeholder="..."></td><td class="py-3"><input type="number" step="0.01" class="w-full text-right focus:outline-none monto-input font-bold text-sm" oninput="calcularTodo()" placeholder="0.00"></td></tr>
-                    <tr class="border-b border-gray-50"><td class="py-3"><input type="text" class="w-full focus:outline-none text-sm desc-input" placeholder="..."></td><td class="py-3"><input type="number" step="0.01" class="w-full text-right focus:outline-none monto-input font-bold text-sm" oninput="calcularTodo()" placeholder="0.00"></td></tr>
-                    <tr class="border-b border-gray-50"><td class="py-3"><input type="text" class="w-full focus:outline-none text-sm desc-input" placeholder="..."></td><td class="py-3"><input type="number" step="0.01" class="w-full text-right focus:outline-none monto-input font-bold text-sm" oninput="calcularTodo()" placeholder="0.00"></td></tr>
-                    <tr class="border-b border-gray-50"><td class="py-3"><input type="text" class="w-full focus:outline-none text-sm desc-input" placeholder="..."></td><td class="py-3"><input type="number" step="0.01" class="w-full text-right focus:outline-none monto-input font-bold text-sm" oninput="calcularTodo()" placeholder="0.00"></td></tr>
+                <tbody id="items-body">
+                    <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input" placeholder="Detalle del servicio..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input" oninput="calcularTodo()" placeholder="0.00"></td></tr>
+                    <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input" placeholder="..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input" oninput="calcularTodo()" placeholder="0.00"></td></tr>
+                    <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input" placeholder="..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input" oninput="calcularTodo()" placeholder="0.00"></td></tr>
+                    <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input" placeholder="..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input" oninput="calcularTodo()" placeholder="0.00"></td></tr>
                 </tbody>
             </table>
         </section>
 
-        <section class="flex flex-col md:flex-row justify-between items-start gap-10">
+        <section class="flex flex-col md:flex-row justify-between items-start gap-12">
             <div class="w-full md:w-1/2">
-                <div id="bs_display_area" class="hidden bs-pdf-box">
-                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Equivalente en Bolívares</p>
+                <div id="bs_display_area" class="hidden bs-pdf-box border-l-4 border-[#E31E24]">
+                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Equivalente en Bolívares</p>
                     <div id="total_bs_text" class="text-2xl font-black text-[#E31E24] my-1">0,00 Bs.</div>
-                    <p class="text-[8px] text-gray-500 leading-tight italic">
-                        ⚠️ <strong>VIGENCIA:</strong> Válido por 24 horas a partir de su emisión.
+                    <p class="text-[8px] text-gray-400 leading-tight italic font-medium">
+                        ⚠️ Este monto es referencial y tiene una vigencia de 24 horas.
                     </p>
                 </div>
             </div>
 
-            <div class="w-full md:w-1/3 space-y-2 border-t-2 border-gray-800 pt-4">
-                <div class="flex justify-between text-xs">
-                    <span class="text-gray-400 font-bold uppercase">Subtotal:</span>
-                    <span id="subtotal_val" class="font-bold text-gray-700">$0.00</span>
+            <div class="w-full md:w-1/3 space-y-3 pt-4">
+                <div class="flex justify-between text-[11px] font-bold uppercase text-gray-400">
+                    <span>Subtotal</span>
+                    <span id="subtotal_val" class="text-gray-800">$0.00</span>
                 </div>
-                <div id="iva_row" class="flex justify-between text-xs hidden">
-                    <span class="text-gray-400 font-bold uppercase">IVA (16%):</span>
-                    <span id="iva_val" class="font-bold text-gray-700">$0.00</span>
+                <div id="iva_row" class="flex justify-between text-[11px] font-bold uppercase text-gray-400 hidden">
+                    <span>IVA (16%)</span>
+                    <span id="iva_val" class="text-gray-800">$0.00</span>
                 </div>
-                <div class="flex justify-between text-2xl border-t-2 border-[#003153] pt-2">
-                    <span class="text-[#003153] font-black uppercase tracking-tighter">Total:</span>
-                    <span id="final_usd" class="text-[#003153] font-black">$0.00</span>
+                <div class="flex justify-between text-2xl border-t-4 border-[#003153] pt-4">
+                    <span class="font-black uppercase tracking-tighter text-[#003153]">Total</span>
+                    <span id="final_usd" class="font-black text-[#003153]">$0.00</span>
                 </div>
             </div>
         </section>
 
-        <footer class="absolute bottom-10 left-15 right-15 text-center border-t pt-4">
-            <p class="text-[9px] text-gray-400 uppercase font-bold tracking-[0.3em]">Kunston Advertising Agency</p>
+        <footer class="absolute bottom-12 left-18 right-18 text-center border-t border-gray-100 pt-6">
+            <p class="text-[9px] text-gray-300 font-bold uppercase tracking-[0.5em]">Kunston Advertising Agency</p>
         </footer>
     </div>
 
@@ -138,10 +163,10 @@
             await generarCorrelativo();
         };
 
-        // ACTUALIZA EL TÍTULO DEL PDF Y RECALCULA IVA
-        function actualizarInterfaz() {
+        // Función para cambiar el título visualmente
+        function actualizarDocumento() {
             const tipo = document.getElementById('tipo_doc').value;
-            document.getElementById('titulo_documento').innerText = tipo;
+            document.getElementById('titulo_factura').innerText = tipo;
             calcularTodo();
         }
 
@@ -155,7 +180,6 @@
             const tasa = parseFloat(document.getElementById('tasa_bcv').value) || 0;
             const tipo = document.getElementById('tipo_doc').value;
             
-            // IVA solo si es Factura
             let iva = (tipo === "Factura de Servicio") ? subtotal * 0.16 : 0;
             document.getElementById('iva_row').classList.toggle('hidden', tipo !== "Factura de Servicio");
 
@@ -198,8 +222,9 @@
             const nombre = document.getElementById('nombre').value;
             const descs = Array.from(document.querySelectorAll('.desc-input')).map(i => i.value).filter(v => v.trim() !== "").join(" | ");
 
-            if (!nombre || d.totalUsd <= 0) return alert("⚠️ Faltan datos.");
+            if (!nombre || d.totalUsd <= 0) return alert("⚠️ Error: Nombre o montos vacíos.");
 
+            // Guardar en Supabase
             await supabaseClient.from('facturas').insert([{
                 cliente_nombre: nombre, rif_cedula: document.getElementById('rif').value,
                 telefono: document.getElementById('telefono').value, email: document.getElementById('email').value,
@@ -207,15 +232,16 @@
                 tasa_euro_bcv: d.tasa, total_bs_referencia: d.totalBs
             }]);
 
+            // Configurar PDF
             const opt = {
                 margin: 0,
-                filename: `Kunston_${nombre}.pdf`,
+                filename: `Kunston_${d.tipo}_${nombre}.pdf`,
                 html2canvas: { scale: 3, useCORS: true },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
             await html2pdf().set(opt).from(document.getElementById('factura-container')).save();
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => location.reload(), 1500);
         }
     </script>
 </body>
