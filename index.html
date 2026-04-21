@@ -158,49 +158,43 @@
     </div>
 
     <script>
-	  // 0. Buscar Factura	
-		async function cargarFacturaPorID() {
+async function cargarFacturaPorID() {
     const id = document.getElementById('search_id').value;
-    if (!id) return alert("⚠️ Ingresa un número de factura.");
+    if (!id) return alert("⚠️ Ingresa un número.");
 
-    const { data, error } = await supabaseClient
-        .from('facturas')
-        .select('*')
-        .eq('id', id)
-        .single();
+    const { data, error } = await supabaseClient.from('facturas').select('*').eq('id', id).single();
 
-    if (error || !data) return alert("❌ Factura no encontrada.");
+    if (error || !data) return alert("❌ No encontrada.");
 
-    // 1. Cargar datos del cliente
+    // Rellenar datos básicos
     document.getElementById('nombre').value = data.cliente_nombre || '';
     document.getElementById('rif').value = data.rif_cedula || '';
     document.getElementById('telefono').value = data.telefono || '';
     document.getElementById('email').value = data.email || '';
-    
-    // 2. Cargar Tipo de Documento y Correlativo
-    document.getElementById('correlativo_display').innerText = `K-${data.id.toString().padStart(4, '0')}`;
-    
-    // 3. Cargar la Tasa (aquí es donde puedes editarla si el cliente paga tarde)
     document.getElementById('tasa_bcv').value = data.tasa_euro_bcv || '';
+    document.getElementById('correlativo_display').innerText = `K-${data.id.toString().padStart(4, '0')}`;
 
-    // 4. Limpiar y Cargar Descripciones y Montos
-    const descripciones = data.descripcion_servicio ? data.descripcion_servicio.split(' | ') : [];
+    // Separar las cadenas de texto de vuelta a listas
+    const descs = data.descripcion_servicio ? data.descripcion_servicio.split(' | ') : [];
+    const montos = data.montos_individuales ? data.montos_individuales.split(' | ') : [];
+
     const inputsDesc = document.querySelectorAll('.desc-input');
     const inputsMonto = document.querySelectorAll('.monto-input');
 
-    // Limpiamos primero
+    // Limpiar campos antes de llenar
     inputsDesc.forEach(i => i.value = '');
     inputsMonto.forEach(i => i.value = '');
 
-    // Llenamos (asumiendo que el monto total se reparte en la primera línea o se recalculó)
-    if (descripciones.length > 0) {
-        inputsDesc[0].value = descripciones[0];
-        inputsMonto[0].value = data.monto_usd; 
-    }
+    // Rellenar cada fila usando un bucle
+    descs.forEach((texto, index) => {
+        if (inputsDesc[index]) {
+            inputsDesc[index].value = texto;
+            inputsMonto[index].value = montos[index] || '';
+        }
+    });
 
-    // Actualizar la visualización
-    actualizarDocumento();
-    alert(`✅ Factura K-${id} cargada. Puedes ajustar la tasa y generar de nuevo.`);
+    calcularTodo(); // Recalcula totales automáticamente
+    alert(`✅ Factura K-${id} cargada con éxito.`);
 }
 		
 		
