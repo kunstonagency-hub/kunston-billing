@@ -11,50 +11,37 @@
     <style>
         :root { --kunston-red: #E31E24; --kunston-orange: #F7941D; --prussian-blue: #003153; }
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; padding: 20px; }
-        
-        /* Área de impresión ajustada para A4 */
-        #factura-container {
-            width: 210mm;
-            min-height: 297mm;
-            padding: 15mm;
-            margin: auto;
-            background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            position: relative;
-        }
-
+        #factura-container { width: 210mm; min-height: 297mm; padding: 15mm; margin: auto; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); position: relative; }
         .gradient-line { background: linear-gradient(90deg, var(--kunston-red), var(--kunston-orange)); height: 4px; }
         .logo-wrapper { width: 160px; height: auto; }
         .logo-wrapper img { width: 100%; height: auto; }
-
-        /* Estilos para el bloque de Bolívares en el PDF */
-        .bs-pdf-box {
-            border: 1px solid #eee;
-            padding: 10px;
-            border-radius: 4px;
-            margin-top: 10px;
-            background-color: #fafafa;
-        }
-
+        .bs-pdf-box { border: 1px solid #eee; padding: 10px; border-radius: 4px; margin-top: 10px; background-color: #fafafa; }
         @media print { .no-print { display: none !important; } }
     </style>
 </head>
 <body>
 
     <div class="max-w-[210mm] mx-auto mb-6 no-print bg-white p-6 rounded-lg shadow-sm border-l-4 border-orange-500">
-        <h2 class="text-sm font-bold uppercase mb-4 text-gray-500">Panel Administrativo</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+        <h2 class="text-sm font-bold uppercase mb-4 text-gray-400 tracking-widest">Configuración del Documento</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
             <div>
-                <label class="block text-[10px] font-bold uppercase mb-1">Tasa BCV Referencial</label>
-                <input type="number" id="tasa_bcv" step="0.01" oninput="calcularTodo()" class="w-full border p-2 rounded font-bold" placeholder="Ej: 44.50">
+                <label class="block text-[10px] font-bold uppercase mb-1">Tipo de Documento</label>
+                <select id="tipo_doc" onchange="actualizarInterfaz()" class="w-full border p-2 rounded font-bold bg-gray-50">
+                    <option value="Nota de Entrega">Nota de Entrega</option>
+                    <option value="Factura de Servicio">Factura de Servicio</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase mb-1">Tasa BCV</label>
+                <input type="number" id="tasa_bcv" step="0.01" oninput="calcularTodo()" class="w-full border p-2 rounded font-bold" placeholder="Tasa Bs.">
             </div>
             <div class="flex items-center gap-2 pb-3">
                 <input type="checkbox" id="check_bs" onchange="toggleBsView()" class="w-4 h-4 accent-orange-500">
-                <label for="check_bs" class="text-xs font-bold uppercase cursor-pointer">Mostrar Monto en Bolívares</label>
+                <label for="check_bs" class="text-[10px] font-bold uppercase cursor-pointer">Mostrar Bs.</label>
             </div>
             <div class="text-right">
-                <button onclick="guardarYGenerar()" class="bg-[#003153] text-white px-8 py-3 rounded-full font-bold hover:bg-black transition-all shadow-lg uppercase text-xs">
-                    Generar PDF y Guardar
+                <button onclick="guardarYGenerar()" class="bg-[#003153] text-white px-6 py-3 rounded-full font-bold hover:bg-black transition-all shadow-lg uppercase text-[10px]">
+                    Generar y Guardar
                 </button>
             </div>
         </div>
@@ -71,15 +58,9 @@
                 <p class="text-[10px] font-semibold text-gray-400 tracking-[0.2em] uppercase">Advertising Agency</p>
             </div>
             <div class="text-right">
-                <div class="no-print mb-1">
-                    <select id="tipo_doc" onchange="actualizarTitulo()" class="font-bold text-xl uppercase focus:outline-none bg-transparent cursor-pointer">
-                        <option value="Nota de Entrega">Nota de Entrega</option>
-                        <option value="Factura">Factura de Servicio</option>
-                    </select>
-                </div>
-                <h1 id="titulo_impresion" class="text-xl font-bold uppercase text-gray-800">NOTA DE ENTREGA</h1>
+                <h1 id="titulo_documento" class="text-2xl font-black uppercase text-gray-800 tracking-tighter">Nota de Entrega</h1>
                 <p class="text-gray-500 text-xs font-bold uppercase">N°: <span id="correlativo_display">K-0000</span></p>
-                <p class="text-gray-500 text-xs">Fecha: <span id="fecha-actual"></span></p>
+                <p class="text-gray-500 text-xs font-medium">Fecha: <span id="fecha-actual"></span></p>
             </div>
         </header>
 
@@ -88,7 +69,7 @@
                 <h3 class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Información del Cliente</h3>
                 <div class="flex items-center gap-2 group">
                     <input type="text" id="nombre" placeholder="Nombre o Razón Social" class="w-full border-b py-1 focus:outline-none font-bold text-gray-800 border-transparent focus:border-orange-500">
-                    <button onclick="buscarCliente()" class="no-print text-xs opacity-50 hover:opacity-100">🔍</button>
+                    <button onclick="buscarCliente()" class="no-print text-xs grayscale hover:grayscale-0 transition-all">🔍</button>
                 </div>
                 <input type="text" id="rif" placeholder="RIF / Cédula" class="w-full border-b border-transparent py-1 focus:outline-none text-sm">
             </div>
@@ -102,15 +83,15 @@
             <table class="w-full text-left">
                 <thead>
                     <tr class="border-b-2 border-gray-100">
-                        <th class="py-3 text-[9px] font-bold uppercase text-gray-400">Descripción del Servicio</th>
-                        <th class="py-3 text-[9px] font-bold uppercase text-gray-400 text-right w-32">Monto (USD)</th>
+                        <th class="py-3 text-[9px] font-bold uppercase text-gray-400 tracking-widest">Descripción del Servicio</th>
+                        <th class="py-3 text-[9px] font-bold uppercase text-gray-400 text-right w-32 tracking-widest">Inversión (USD)</th>
                     </tr>
                 </thead>
                 <tbody id="filas-items">
-                    <tr class="border-b border-gray-50"><td class="py-2"><input type="text" class="w-full focus:outline-none text-sm desc-input" placeholder="..."></td><td class="py-2"><input type="number" step="0.01" class="w-full text-right focus:outline-none monto-input font-bold text-sm" oninput="calcularTodo()" placeholder="0.00"></td></tr>
-                    <tr class="border-b border-gray-50"><td class="py-2"><input type="text" class="w-full focus:outline-none text-sm desc-input" placeholder="..."></td><td class="py-2"><input type="number" step="0.01" class="w-full text-right focus:outline-none monto-input font-bold text-sm" oninput="calcularTodo()" placeholder="0.00"></td></tr>
-                    <tr class="border-b border-gray-50"><td class="py-2"><input type="text" class="w-full focus:outline-none text-sm desc-input" placeholder="..."></td><td class="py-2"><input type="number" step="0.01" class="w-full text-right focus:outline-none monto-input font-bold text-sm" oninput="calcularTodo()" placeholder="0.00"></td></tr>
-                    <tr class="border-b border-gray-50"><td class="py-2"><input type="text" class="w-full focus:outline-none text-sm desc-input" placeholder="..."></td><td class="py-2"><input type="number" step="0.01" class="w-full text-right focus:outline-none monto-input font-bold text-sm" oninput="calcularTodo()" placeholder="0.00"></td></tr>
+                    <tr class="border-b border-gray-50"><td class="py-3"><input type="text" class="w-full focus:outline-none text-sm desc-input" placeholder="..."></td><td class="py-3"><input type="number" step="0.01" class="w-full text-right focus:outline-none monto-input font-bold text-sm" oninput="calcularTodo()" placeholder="0.00"></td></tr>
+                    <tr class="border-b border-gray-50"><td class="py-3"><input type="text" class="w-full focus:outline-none text-sm desc-input" placeholder="..."></td><td class="py-3"><input type="number" step="0.01" class="w-full text-right focus:outline-none monto-input font-bold text-sm" oninput="calcularTodo()" placeholder="0.00"></td></tr>
+                    <tr class="border-b border-gray-50"><td class="py-3"><input type="text" class="w-full focus:outline-none text-sm desc-input" placeholder="..."></td><td class="py-3"><input type="number" step="0.01" class="w-full text-right focus:outline-none monto-input font-bold text-sm" oninput="calcularTodo()" placeholder="0.00"></td></tr>
+                    <tr class="border-b border-gray-50"><td class="py-3"><input type="text" class="w-full focus:outline-none text-sm desc-input" placeholder="..."></td><td class="py-3"><input type="number" step="0.01" class="w-full text-right focus:outline-none monto-input font-bold text-sm" oninput="calcularTodo()" placeholder="0.00"></td></tr>
                 </tbody>
             </table>
         </section>
@@ -118,11 +99,10 @@
         <section class="flex flex-col md:flex-row justify-between items-start gap-10">
             <div class="w-full md:w-1/2">
                 <div id="bs_display_area" class="hidden bs-pdf-box">
-                    <p class="text-[9px] font-bold text-gray-400 uppercase">Total Referencial Bolívares</p>
-                    <div id="total_bs_text" class="text-xl font-black text-[#E31E24] my-1">0,00 Bs.</div>
+                    <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Equivalente en Bolívares</p>
+                    <div id="total_bs_text" class="text-2xl font-black text-[#E31E24] my-1">0,00 Bs.</div>
                     <p class="text-[8px] text-gray-500 leading-tight italic">
-                        ⚠️ <strong>VIGENCIA:</strong> Este monto tiene una validez de 24 horas. 
-                        Deberá recalcularse según la tasa oficial al momento del pago.
+                        ⚠️ <strong>VIGENCIA:</strong> Válido por 24 horas a partir de su emisión.
                     </p>
                 </div>
             </div>
@@ -136,15 +116,15 @@
                     <span class="text-gray-400 font-bold uppercase">IVA (16%):</span>
                     <span id="iva_val" class="font-bold text-gray-700">$0.00</span>
                 </div>
-                <div class="flex justify-between text-xl border-t-2 border-[#003153] pt-2">
-                    <span class="text-[#003153] font-black uppercase">Total:</span>
+                <div class="flex justify-between text-2xl border-t-2 border-[#003153] pt-2">
+                    <span class="text-[#003153] font-black uppercase tracking-tighter">Total:</span>
                     <span id="final_usd" class="text-[#003153] font-black">$0.00</span>
                 </div>
             </div>
         </section>
 
         <footer class="absolute bottom-10 left-15 right-15 text-center border-t pt-4">
-            <p class="text-[9px] text-gray-400 uppercase font-bold tracking-widest">Kunston Advertising Agency • @kunstonagency</p>
+            <p class="text-[9px] text-gray-400 uppercase font-bold tracking-[0.3em]">Kunston Advertising Agency</p>
         </footer>
     </div>
 
@@ -158,8 +138,10 @@
             await generarCorrelativo();
         };
 
-        function actualizarTitulo() {
-            document.getElementById('titulo_impresion').innerText = document.getElementById('tipo_doc').value;
+        // ACTUALIZA EL TÍTULO DEL PDF Y RECALCULA IVA
+        function actualizarInterfaz() {
+            const tipo = document.getElementById('tipo_doc').value;
+            document.getElementById('titulo_documento').innerText = tipo;
             calcularTodo();
         }
 
@@ -172,9 +154,10 @@
 
             const tasa = parseFloat(document.getElementById('tasa_bcv').value) || 0;
             const tipo = document.getElementById('tipo_doc').value;
-            let iva = (tipo === "Factura") ? subtotal * 0.16 : 0;
             
-            document.getElementById('iva_row').classList.toggle('hidden', tipo !== "Factura");
+            // IVA solo si es Factura
+            let iva = (tipo === "Factura de Servicio") ? subtotal * 0.16 : 0;
+            document.getElementById('iva_row').classList.toggle('hidden', tipo !== "Factura de Servicio");
 
             const totalUsd = subtotal + iva;
             const totalBs = totalUsd * tasa;
