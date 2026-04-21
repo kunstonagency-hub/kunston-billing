@@ -161,12 +161,12 @@
     </div>
 
 <script>
-        // 1. CONEXIÓN
+// 1. CONEXIÓN
         const SUPABASE_URL = 'https://ydplbvargkztuncrmawn.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_zrErxvRH8Ac8NG0iRKm_qA_r18Uk9Nk';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-	
-	// NUEVA FUNCIÓN: EL CANDADO (Agrégala aquí)
+    
+        // NUEVA FUNCIÓN: EL CANDADO 
         async function verificarSeguridad() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) {
@@ -175,19 +175,12 @@
             }
         }
 
-        // 2. INICIO (Reemplaza tu bloque actual por este)
+        // 2. INICIO (Único y definitivo)
         window.onload = async () => {
             // Primero verificamos si el usuario tiene permiso
             await verificarSeguridad(); 
 
             // Si el código llega aquí, es porque hay una sesión activa
-            document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
-            generarCorrelativo(); 
-            obtenerTasaBCV(); 
-        };
-
-       // 2. INICIO
-        window.onload = () => {
             document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
             generarCorrelativo(); 
             obtenerTasaBCV(); 
