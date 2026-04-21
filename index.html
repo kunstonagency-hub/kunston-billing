@@ -269,19 +269,42 @@
         }
 
         async function guardarYGenerar() {
-            const d = calcularTodo();
-            const nombre = document.getElementById('nombre').value;
-            const descs = Array.from(document.querySelectorAll('.desc-input')).map(i => i.value).filter(v => v.trim() !== "").join(" | ");
+    const d = calcularTodo();
+    const nombre = document.getElementById('nombre').value;
+    
+    // Capturamos todas las descripciones y montos que NO estén vacíos
+    const inputsDesc = document.querySelectorAll('.desc-input');
+    const inputsMonto = document.querySelectorAll('.monto-input');
+    
+    let descsArray = [];
+    let montosArray = [];
 
-            if (!nombre || d.totalUsd <= 0) return alert("⚠️ Error: Nombre o montos vacíos.");
+    inputsDesc.forEach((input, index) => {
+        if (input.value.trim() !== "") {
+            descsArray.push(input.value);
+            montosArray.push(inputsMonto[index].value || 0);
+        }
+    });
 
-            // Guardar en Supabase
-            await supabaseClient.from('facturas').insert([{
-                cliente_nombre: nombre, rif_cedula: document.getElementById('rif').value,
-                telefono: document.getElementById('telefono').value, email: document.getElementById('email').value,
-                descripcion_servicio: descs, monto_usd: d.totalUsd,
-                tasa_euro_bcv: d.tasa, total_bs_referencia: d.totalBs
-            }]);
+    if (!nombre || d.totalUsd <= 0) return alert("⚠️ Error: Nombre o montos vacíos.");
+
+    // Guardar en Supabase
+    const { error } = await supabaseClient.from('facturas').insert([{
+        cliente_nombre: nombre, 
+        rif_cedula: document.getElementById('rif').value,
+        telefono: document.getElementById('telefono').value, 
+        email: document.getElementById('email').value,
+        descripcion_servicio: descsArray.join(" | "), // Guardamos unidos por |
+        montos_individuales: montosArray.join(" | "),  // NUEVA COLUMNA
+        monto_usd: d.totalUsd,
+        tasa_euro_bcv: d.tasa, 
+        total_bs_referencia: d.totalBs
+    }]);
+
+    if (error) return alert("Error al guardar: " + error.message);
+
+    // ... resto del código del PDF (const opt, etc) ...
+}
 
             // Configurar PDF
             const opt = {
