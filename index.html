@@ -157,58 +157,19 @@
         </footer>
     </div>
 
-    <script>
-async function cargarFacturaPorID() {
-    const id = document.getElementById('search_id').value;
-    if (!id) return alert("⚠️ Ingresa un número.");
-
-    const { data, error } = await supabaseClient.from('facturas').select('*').eq('id', id).single();
-
-    if (error || !data) return alert("❌ No encontrada.");
-
-    // Rellenar datos básicos
-    document.getElementById('nombre').value = data.cliente_nombre || '';
-    document.getElementById('rif').value = data.rif_cedula || '';
-    document.getElementById('telefono').value = data.telefono || '';
-    document.getElementById('email').value = data.email || '';
-    document.getElementById('tasa_bcv').value = data.tasa_euro_bcv || '';
-    document.getElementById('correlativo_display').innerText = `K-${data.id.toString().padStart(4, '0')}`;
-
-    // Separar las cadenas de texto de vuelta a listas
-    const descs = data.descripcion_servicio ? data.descripcion_servicio.split(' | ') : [];
-    const montos = data.montos_individuales ? data.montos_individuales.split(' | ') : [];
-
-    const inputsDesc = document.querySelectorAll('.desc-input');
-    const inputsMonto = document.querySelectorAll('.monto-input');
-
-    // Limpiar campos antes de llenar
-    inputsDesc.forEach(i => i.value = '');
-    inputsMonto.forEach(i => i.value = '');
-
-    // Rellenar cada fila usando un bucle
-    descs.forEach((texto, index) => {
-        if (inputsDesc[index]) {
-            inputsDesc[index].value = texto;
-            inputsMonto[index].value = montos[index] || '';
-        }
-    });
-
-    calcularTodo(); // Recalcula totales automáticamente
-    alert(`✅ Factura K-${id} cargada con éxito.`);
-}
-		
-		
- // REEMPLAZA ESTOS VALORES CON LOS NUEVOS
+<script>
+        // 1. CONEXIÓN (Siempre arriba para que cargue primero)
         const SUPABASE_URL = 'https://ydplbvargkztuncrmawn.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_zrErxvRH8Ac8NG0iRKm_qA_r18Uk9Nk';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // 2. INICIO
         window.onload = async () => {
             document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
             await generarCorrelativo();
         };
 
-        // Función para cambiar el título visualmente
+        // 3. FUNCIONES DE CÁLCULO
         function actualizarDocumento() {
             const tipo = document.getElementById('tipo_doc').value;
             document.getElementById('titulo_factura').innerText = tipo;
@@ -239,6 +200,11 @@ async function cargarFacturaPorID() {
             return { totalUsd, tasa, totalBs, tipo };
         }
 
+        function toggleBsView() {
+            document.getElementById('bs_display_area').classList.toggle('hidden', !document.getElementById('check_bs').checked);
+        }
+
+        // 4. FUNCIONES DE BASE DE DATOS
         async function buscarCliente() {
             const bus = document.getElementById('nombre').value.trim();
             if (!bus) return;
@@ -252,55 +218,86 @@ async function cargarFacturaPorID() {
             }
         }
 
-        function toggleBsView() {
-            document.getElementById('bs_display_area').classList.toggle('hidden', !document.getElementById('check_bs').checked);
-        }
-
         async function generarCorrelativo() {
             const { data } = await supabaseClient.from('facturas').select('id').order('id', { ascending: false }).limit(1);
             let num = (data && data.length > 0) ? data[0].id + 1 : 1;
             document.getElementById('correlativo_display').innerText = `K-${num.toString().padStart(4, '0')}`;
         }
 
-        async function guardarYGenerar() {
-    const d = calcularTodo();
-    const nombre = document.getElementById('nombre').value;
-    
-    // Capturamos todas las descripciones y montos que NO estén vacíos
-    const inputsDesc = document.querySelectorAll('.desc-input');
-    const inputsMonto = document.querySelectorAll('.monto-input');
-    
-    let descsArray = [];
-    let montosArray = [];
+        async function cargarFacturaPorID() {
+            const id = document.getElementById('search_id').value;
+            if (!id) return alert("⚠️ Ingresa un número.");
 
-    inputsDesc.forEach((input, index) => {
-        if (input.value.trim() !== "") {
-            descsArray.push(input.value);
-            montosArray.push(inputsMonto[index].value || 0);
+            const { data, error } = await supabaseClient.from('facturas').select('*').eq('id', id).single();
+
+            if (error || !data) return alert("❌ No encontrada.");
+
+            // Rellenar datos básicos
+            document.getElementById('nombre').value = data.cliente_nombre || '';
+            document.getElementById('rif').value = data.rif_cedula || '';
+            document.getElementById('telefono').value = data.telefono || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('tasa_bcv').value = data.tasa_euro_bcv || '';
+            document.getElementById('correlativo_display').innerText = `K-${data.id.toString().padStart(4, '0')}`;
+
+            // Separar las cadenas de texto de vuelta a listas
+            const descs = data.descripcion_servicio ? data.descripcion_servicio.split(' | ') : [];
+            const montos = data.montos_individuales ? data.montos_individuales.split(' | ') : [];
+
+            const inputsDesc = document.querySelectorAll('.desc-input');
+            const inputsMonto = document.querySelectorAll('.monto-input');
+
+            // Limpiar campos antes de llenar
+            inputsDesc.forEach(i => i.value = '');
+            inputsMonto.forEach(i => i.value = '');
+
+            // Rellenar cada fila usando un bucle
+            descs.forEach((texto, index) => {
+                if (inputsDesc[index]) {
+                    inputsDesc[index].value = texto;
+                    inputsMonto[index].value = montos[index] || '';
+                }
+            });
+
+            calcularTodo(); 
+            alert(`✅ Factura K-${id} cargada con éxito.`);
         }
-    });
 
-    if (!nombre || d.totalUsd <= 0) return alert("⚠️ Error: Nombre o montos vacíos.");
+        async function guardarYGenerar() {
+            const d = calcularTodo();
+            const nombre = document.getElementById('nombre').value;
+            
+            const inputsDesc = document.querySelectorAll('.desc-input');
+            const inputsMonto = document.querySelectorAll('.monto-input');
+            
+            let descsArray = [];
+            let montosArray = [];
 
-    // Guardar en Supabase
-    const { error } = await supabaseClient.from('facturas').insert([{
-        cliente_nombre: nombre, 
-        rif_cedula: document.getElementById('rif').value,
-        telefono: document.getElementById('telefono').value, 
-        email: document.getElementById('email').value,
-        descripcion_servicio: descsArray.join(" | "), // Guardamos unidos por |
-        montos_individuales: montosArray.join(" | "),  // NUEVA COLUMNA
-        monto_usd: d.totalUsd,
-        tasa_euro_bcv: d.tasa, 
-        total_bs_referencia: d.totalBs
-    }]);
+            inputsDesc.forEach((input, index) => {
+                if (input.value.trim() !== "") {
+                    descsArray.push(input.value);
+                    montosArray.push(inputsMonto[index].value || 0);
+                }
+            });
 
-    if (error) return alert("Error al guardar: " + error.message);
+            if (!nombre || d.totalUsd <= 0) return alert("⚠️ Error: Nombre o montos vacíos.");
 
-    // ... resto del código del PDF (const opt, etc) ...
-}
+            // Guardar en Supabase
+            const { error } = await supabaseClient.from('facturas').insert([{
+                cliente_nombre: nombre, 
+                rif_cedula: document.getElementById('rif').value,
+                telefono: document.getElementById('telefono').value, 
+                email: document.getElementById('email').value,
+                descripcion_servicio: descsArray.join(" | "), 
+                montos_individuales: montosArray.join(" | "),  
+                monto_usd: d.totalUsd,
+                tasa_euro_bcv: d.tasa, 
+                total_bs_referencia: d.totalBs
+            }]);
 
-            // Configurar PDF
+            if (error) return alert("Error al guardar: " + error.message);
+
+            // Configurar PDF (AHORA SÍ ESTÁ DENTRO DE LA FUNCIÓN)
             const opt = {
                 margin: 0,
                 filename: `Kunston_${d.tipo}_${nombre}.pdf`,
@@ -309,7 +306,7 @@ async function cargarFacturaPorID() {
                     scale: 3, 
                     useCORS: true,
                     letterRendering: true,
-                    scrollY: 0 // <--- ESTO ES LO QUE EVITA EL SALTO DE PÁGINA
+                    scrollY: 0 
                 },
                 jsPDF: { 
                     unit: 'mm', 
@@ -318,6 +315,7 @@ async function cargarFacturaPorID() {
                     compress: true
                 }
             };
+            
             await html2pdf().set(opt).from(document.getElementById('factura-container')).save();
             setTimeout(() => location.reload(), 1500);
         }
