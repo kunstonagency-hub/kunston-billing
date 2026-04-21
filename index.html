@@ -15,7 +15,7 @@
     <div class="max-w-[210mm] mx-auto mb-8 no-print bg-white p-6 rounded-xl shadow-sm border-l-8 border-[#003153]">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Panel de Control Kunston</h2>
-            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold">v4.2 Stable</span>
+            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold">v4.4 Master</span>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
@@ -42,16 +42,16 @@
                     Generar y Guardar
                 </button>
             </div>
-			
-			<div class="border-r border-gray-100 pr-4">
-   			 <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Buscar Factura (N°)</label>
-   			 <div class="flex gap-2">
-      		 <input type="number" id="search_id" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold outline-none focus:border-orange-500" placeholder="Ej: 5">
-        	<button onclick="cargarFacturaPorID()" class="bg-gray-100 p-2 rounded-lg hover:bg-gray-200 transition-colors">
-            🔍
-        	</button>
-    </div>
-</div>
+            
+            <div class="border-r border-gray-100 pr-4">
+             <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Buscar Factura (N°)</label>
+             <div class="flex gap-2">
+               <input type="number" id="search_id" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold outline-none focus:border-orange-500" placeholder="Ej: 5">
+               <button onclick="cargarFacturaPorID()" class="bg-gray-100 p-2 rounded-lg hover:bg-gray-200 transition-colors">
+                 🔍
+               </button>
+             </div>
+            </div>
         </div>
     </div>
 
@@ -110,10 +110,9 @@
 
         <section class="flex flex-col md:flex-row justify-between items-start gap-12">
             <div class="w-full md:w-1/2">
-               
-				<div id="bs_display_area" class="hidden bs-pdf-box border-l-4 border-[#E31E24]">
-            		<div class="flex justify-between items-start">
-               		 <div class="flex-1">
+                <div id="bs_display_area" class="hidden bs-pdf-box border-l-4 border-[#E31E24]">
+                    <div class="flex justify-between items-start">
+                         <div class="flex-1">
                     <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Bolívares</p>
                     <div id="total_bs_text" class="text-2xl font-black text-[#E31E24] my-1">0,00 Bs.</div>
                     <p class="text-[8px] text-gray-400 italic mb-4">⚠️ Válido por 24 horas.</p>
@@ -123,14 +122,14 @@
                         Cédula: <span class="font-normal">V18332193</span><br>
                         Teléfono: <span class="font-normal">04245763648</span><br>
                         Banco: <span class="font-normal">0102 - Banco de Venezuela</span>
-                	</div>
-                	</div>
+                    </div>
+                    </div>
 
-                	<div class="ml-4 text-center">
+                    <div class="ml-4 text-center">
                     <img src="qr-gustavo-bdv.png" alt="QR Pago" class="w-20 h-20 border p-1 bg-white shadow-sm">
                     <p class="text-[7px] text-gray-400 uppercase font-bold mt-1">Escanea y Paga</p>
-                	</div>
-            	</div>
+                    </div>
+                </div>
             
             <a href="https://bdvdigital.banvenez.com/pagomovil?id=V18332193&phone=584245763648&bank=0102&description=9dxBliWt4XnVSB0LTqNasQ%3D%3D" 
                target="_blank" 
@@ -162,44 +161,39 @@
     </div>
 
 <script>
-        // 1. CONEXIÓN (Siempre arriba para que cargue primero)
+        // 1. CONEXIÓN
         const SUPABASE_URL = 'https://ydplbvargkztuncrmawn.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_zrErxvRH8Ac8NG0iRKm_qA_r18Uk9Nk';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
        // 2. INICIO
         window.onload = () => {
-            // El "gatillo" automático al abrir la página
             document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
-            
-            // Le quitamos el "await" para que corran en paralelo y no se estorben
             generarCorrelativo(); 
             obtenerTasaBCV(); 
         };
 
-        // 3. FUNCIONES DE CÁLCULO
-        // ... (tu función actualizarDocumento se queda igual) ...
+        // 3. FUNCIONES DE CÁLCULO Y AUTOMATIZACIÓN
+        function actualizarDocumento() {
+            const tipo = document.getElementById('tipo_doc').value;
+            document.getElementById('titulo_factura').innerText = tipo;
+            calcularTodo();
+        }
 
         // Extraer tasa BCV (EURO) automáticamente
         async function obtenerTasaBCV() {
             const inputTasa = document.getElementById('tasa_bcv');
-            
-            // Si ya hay un número (porque cargaste una factura vieja), abortamos.
             if (inputTasa.value) return; 
 
             try {
                 console.log("⏳ Conectando con el Banco Central (Euro)...");
-                
-                // AQUÍ ESTÁ EL CAMBIO: Ahora pedimos los Euros
                 const respuesta = await fetch('https://ve.dolarapi.com/v1/euros/oficial');
-                
                 if (!respuesta.ok) throw new Error("La API no respondió correctamente");
                 
                 const datos = await respuesta.json();
-                
                 if (datos && datos.promedio) {
                     inputTasa.value = datos.promedio.toFixed(2);
-                    calcularTodo(); // Actualizamos los bolívares de inmediato
+                    calcularTodo();
                     console.log("✅ Tasa Euro BCV obtenida con éxito:", datos.promedio);
                 }
             } catch (error) {
@@ -227,8 +221,6 @@
             document.getElementById('iva_val').innerText = `$${iva.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
             document.getElementById('final_usd').innerText = `$${totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
             document.getElementById('total_bs_text').innerText = `${totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2})} Bs.`;
-			document.getElementById('ciudad').value = c.ciudad || '';
-            document.getElementById('direccion').value = c.direccion || '';
 
             return { totalUsd, tasa, totalBs, tipo };
         }
@@ -248,8 +240,8 @@
                 document.getElementById('rif').value = c.rif_cedula || '';
                 document.getElementById('telefono').value = c.telefono || '';
                 document.getElementById('email').value = c.email || '';
-				document.getElementById('ciudad').value = data.ciudad || '';
-            	document.getElementById('direccion').value = data.direccion || '';
+                document.getElementById('ciudad').value = c.ciudad || '';
+                document.getElementById('direccion').value = c.direccion || '';
             }
         }
 
@@ -274,7 +266,7 @@
             document.getElementById('email').value = data.email || '';
             document.getElementById('ciudad').value = data.ciudad || '';
             document.getElementById('direccion').value = data.direccion || '';
-			document.getElementById('tasa_bcv').value = data.tasa_euro_bcv || '';
+            document.getElementById('tasa_bcv').value = data.tasa_euro_bcv || '';
             document.getElementById('correlativo_display').innerText = `K-${data.id.toString().padStart(4, '0')}`;
 
             // Separar las cadenas de texto de vuelta a listas
@@ -325,7 +317,7 @@
                 rif_cedula: document.getElementById('rif').value,
                 telefono: document.getElementById('telefono').value, 
                 email: document.getElementById('email').value,
-				ciudad: document.getElementById('ciudad').value,
+                ciudad: document.getElementById('ciudad').value,
                 direccion: document.getElementById('direccion').value,
                 descripcion_servicio: descsArray.join(" | "), 
                 montos_individuales: montosArray.join(" | "),  
@@ -336,7 +328,7 @@
 
             if (error) return alert("Error al guardar: " + error.message);
 
-            // Configurar PDF (AHORA SÍ ESTÁ DENTRO DE LA FUNCIÓN)
+            // Configurar PDF 
             const opt = {
                 margin: 0,
                 filename: `Kunston_${d.tipo}_${nombre}.pdf`,
