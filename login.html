@@ -11,8 +11,8 @@
 <body class="bg-gray-50 h-screen flex items-center justify-center font-['Inter']">
 
     <div class="bg-white p-10 rounded-2xl shadow-xl w-full max-w-md border-t-8 border-[#003153]">
-        <div class="text-center mb-8">
-            <h1 class="text-4xl font-black uppercase text-[#003153] tracking-tighter">Kunston</h1>
+        <div class="text-center mb-8 flex flex-col items-center">
+            <img src="logo_kunston_pdf.png" alt="Kunston Agency" class="w-48 mb-2 object-contain">
             <p class="text-[10px] font-bold text-gray-400 tracking-[0.3em] uppercase mt-2">Sistema de Gestión Privado</p>
         </div>
 
@@ -36,35 +36,12 @@
     </div>
 
     <script>
-		
-		
-		
-        // Conexión a Supabase (Tus mismas credenciales)
+        // Conexión a Supabase
         const SUPABASE_URL = 'https://ydplbvargkztuncrmawn.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_zrErxvRH8Ac8NG0iRKm_qA_r18Uk9Nk';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-		
-		// NUEVA FUNCIÓN: EL CANDADO (Agrégala aquí)
-        async function verificarSeguridad() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) {
-                // Si no hay sesión activa, redirige al login de inmediato
-                window.location.replace('login.html'); 
-            }
-        }
 
-        // 2. INICIO (Reemplaza tu bloque actual por este)
-        window.onload = async () => {
-            // Primero verificamos si el usuario tiene permiso
-            await verificarSeguridad(); 
-
-            // Si el código llega aquí, es porque hay una sesión activa
-            document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
-            generarCorrelativo(); 
-            obtenerTasaBCV(); 
-        };
-
-        // Si el usuario ya está logueado y abre esta página por error, lo mandamos al panel
+        // Si el usuario ya está logueado, lo mandamos al panel
         window.onload = async () => {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) window.location.href = 'index.html'; 
@@ -72,7 +49,7 @@
 
         // Función que envía los datos a la bóveda de Supabase
         async function iniciarSesion(e) {
-            e.preventDefault(); // Evita que la página parpadee
+            e.preventDefault(); 
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
@@ -99,7 +76,6 @@
                 btn.classList.remove("bg-[#003153]");
                 btn.classList.add("bg-green-600");
                 
-                // Espera 1 segundo y lo teletransporta al facturador
                 setTimeout(() => {
                     window.location.href = 'index.html';
                 }, 1000);
