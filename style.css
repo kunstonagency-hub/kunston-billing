@@ -1,0 +1,66 @@
+/* Estilos compatibles con Dreamweaver */
+body { 
+    font-family: 'Inter', sans-serif; 
+    background-color: #f3f4f6; 
+    padding: 20px; 
+    color: #1f2937; 
+}
+
+#factura-container {
+    width: 210mm;
+    height: 296mm; 
+    padding: 18mm;
+    margin: auto;
+    background: white;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.gradient-line { 
+    background: linear-gradient(90deg, #E31E24, #F7941D); 
+    height: 4px; 
+}
+
+.logo-wrapper { width: 170px; }
+.logo-wrapper img { width: 100%; height: auto; display: block; }
+
+.bs-pdf-box { 
+    border: 1px solid #f3f4f6; 
+    padding: 12px; 
+    border-radius: 6px; 
+    background-color: #fafafa; 
+    margin-top: 10px; 
+}
+
+.factura-input { 
+    border-bottom: 1px solid transparent; 
+    transition: border-color 0.2s; 
+}
+
+/* Aquí quité la variable y puse el naranja directamente */
+.factura-input:focus { 
+    border-bottom: 1px solid #F7941D; 
+    outline: none; 
+}
+
+.factura-input::placeholder { color: #d1d5db; }
+
+@media print { 
+    .no-print { display: none !important; } 
+}
+
+/* Estilo del botón de pago */
+.bs-pdf-box a {
+    text-decoration: none;
+    display: inline-block;
+}
+
+/* Asegurar que el color rojo se mantenga en el PDF */
+@media print {
+    .bs-pdf-box a {
+        background-color: #E31E24 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact;
+    }
+}
