@@ -9,360 +9,408 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Corrección para evitar que el PDF se corte */
+        .page-container { width: 210mm; min-height: 297mm; margin: 0 auto; background: white; }
+        .page-break { page-break-before: always; }
+        @media print { .no-print { display: none; } }
+    </style>
 </head>
-<body>
+<body class="bg-gray-100 pb-20 font-['Inter']">
 
-    <div class="max-w-[210mm] mx-auto mb-8 no-print bg-white p-6 rounded-xl shadow-sm border-l-8 border-[#003153]">
+    <div class="max-w-[210mm] mx-auto mb-4 no-print bg-white p-6 rounded-xl shadow-md border-l-8 border-[#003153] mt-8">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Panel de Control Kunston</h2>
-            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold">v4.4 Master</span>
+            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold uppercase">v4.7 Master</span>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end border-b pb-6 border-gray-50">
             <div>
                 <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Tipo de Documento</label>
-                <select id="tipo_doc" onchange="actualizarDocumento()" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold bg-gray-50 focus:border-orange-500 outline-none">
+                <select id="tipo_doc" onchange="actualizarDocumento()" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold bg-gray-50 outline-none focus:border-orange-500">
                     <option value="Nota de Entrega">Nota de Entrega</option>
                     <option value="Factura de Servicio">Factura de Servicio</option>
                 </select>
             </div>
-
             <div>
-                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Tasa BCV del día</label>
-                <input type="number" id="tasa_bcv" step="0.01" oninput="calcularTodo()" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold focus:border-orange-500 outline-none" placeholder="Ej: 44.50">
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Tasa BCV (Euro/USD)</label>
+                <input type="number" id="tasa_bcv" step="0.01" oninput="calcularTodo()" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold outline-none focus:border-orange-500" placeholder="0.00">
             </div>
-
             <div class="flex items-center gap-3 pb-3">
                 <input type="checkbox" id="check_bs" onchange="toggleBsView()" class="w-5 h-5 accent-orange-500 cursor-pointer">
                 <label for="check_bs" class="text-[10px] font-bold uppercase text-gray-600 cursor-pointer">Mostrar Bolívares</label>
             </div>
+            <button onclick="guardarYGenerar()" class="w-full bg-[#003153] text-white py-3 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all shadow-lg">
+                Generar y Guardar
+            </button>
+        </div>
 
-            <div class="text-right">
-                <button onclick="guardarYGenerar()" class="w-full bg-[#003153] text-white py-3 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all shadow-lg">
-                    Generar y Guardar
-                </button>
+        <div class="mt-6 flex items-end gap-6">
+            <div class="flex-1">
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Cargar Factura (N°)</label>
+                <div class="flex gap-2">
+                    <input type="number" id="search_id" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold outline-none focus:border-orange-500" placeholder="Ej: 8">
+                    <button onclick="cargarFacturaPorID()" class="bg-gray-100 px-4 rounded-lg hover:bg-gray-200 transition-colors">🔍</button>
+                </div>
             </div>
-            
-            <div class="border-r border-gray-100 pr-4">
-             <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Buscar Factura (N°)</label>
-             <div class="flex gap-2">
-               <input type="number" id="search_id" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold outline-none focus:border-orange-500" placeholder="Ej: 5">
-               <button onclick="cargarFacturaPorID()" class="bg-gray-100 p-2 rounded-lg hover:bg-gray-200 transition-colors">
-                 🔍
-               </button>
-             </div>
+            <div class="flex-1 text-right">
+                <p id="status_pago" class="text-[10px] font-black uppercase text-gray-300 tracking-widest">Estado: Sin cargar</p>
             </div>
+        </div>
+    </div>
+
+    <div id="admin-panel" class="max-w-[210mm] mx-auto mb-8 no-print bg-white p-6 rounded-xl shadow-md border-l-8 border-green-600">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Administrador de Abonos</h2>
+            <div id="resumen_cuentas" class="text-[10px] font-bold text-green-600 hidden">
+                Abonado: <span id="val_abonado">$0</span> | Pendiente: <span id="val_pendiente">$0</span>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Método</label>
+                <select id="metodo_pago" onchange="cambiarMonedaAdmin()" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold bg-gray-50 outline-none focus:border-green-500">
+                    <option value="Pago Móvil">Pago Móvil</option>
+                    <option value="Zelle">Zelle</option>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Transferencia">Transferencia</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Referencia</label>
+                <input type="text" id="ref_pago" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold outline-none focus:border-green-500" placeholder="Confirmación">
+            </div>
+            <div>
+                <label id="label_monto_abono" class="block text-[10px] font-bold uppercase text-green-600 mb-2">Monto (Bs.)</label>
+                <input type="number" id="monto_abono_input" step="0.01" class="w-full border-2 border-green-100 p-2 rounded-lg font-bold outline-none focus:border-green-500" placeholder="0.00">
+            </div>
+            <button onclick="generarReciboPago()" class="w-full bg-green-600 text-white py-3 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all shadow-lg">
+                Registrar Pago
+            </button>
         </div>
     </div>
 
     <div id="factura-container">
-        <div class="gradient-line mb-10"></div>
         
-        <header class="flex justify-between items-start mb-12 pb-8 border-b border-gray-50">
-            <div>
-                <div class="logo-wrapper mb-3">
-                    <img src="logo_kunston_pdf.png" alt="Kunston Agency">
-                </div>
-                <p class="text-[11px] font-bold text-gray-400 tracking-[0.3em] uppercase">Advertising Agency</p>
-            </div>
-            <div class="text-right">
-                <h1 id="titulo_factura" class="text-3xl font-black uppercase text-[#003153] tracking-tighter mb-1">Nota de Entrega</h1>
-                <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">N°: <span id="correlativo_display" class="text-gray-800">K-0000</span></p>
-                <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Fecha: <span id="fecha-actual" class="text-gray-800">--/--/----</span></p>
-            </div>
-        </header>
-
-        <section class="mb-12">
-            <h3 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-4">Información del Cliente</h3>
+        <div class="page-container p-12 relative" id="hoja1">
+            <div class="w-full h-2 bg-[#003153] mb-10"></div>
             
-            <div class="flex items-center gap-2 mb-5">
-                <input type="text" id="nombre" placeholder="Nombre o Razón Social" class="factura-input w-full py-1 font-black text-lg text-gray-800 border-b border-gray-100 focus:border-orange-500">
-                <button onclick="buscarCliente()" class="no-print text-gray-300 hover:text-orange-500 transition-colors">🔍</button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-x-16 gap-y-5">
-                <input type="text" id="rif" placeholder="RIF / Cédula" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100">
-                <input type="text" id="telefono" placeholder="Teléfono" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100">
-                
-                <input type="email" id="email" placeholder="Correo Electrónico" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100">
-                <input type="text" id="ciudad" placeholder="Ciudad (Ej: Caracas / Guarenas)" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100">
-                
-                <input type="text" id="direccion" placeholder="Dirección Fiscal" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100 col-span-2">
-            </div>
-        </section>
-
-        <section class="mb-12">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="border-b-2 border-gray-800">
-                        <th class="py-4 text-[10px] font-black uppercase text-gray-800 tracking-[0.2em]">Descripción del Servicio</th>
-                        <th class="py-4 text-[10px] font-black uppercase text-gray-800 text-right w-40 tracking-[0.2em]">Inversión (USD)</th>
-                    </tr>
-                </thead>
-                <tbody id="items-body">
-                    <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input" placeholder="Detalle del servicio..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input" oninput="calcularTodo()" placeholder="0.00"></td></tr>
-                    <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input" placeholder="..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input" oninput="calcularTodo()" placeholder="0.00"></td></tr>
-                    <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input" placeholder="..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input" oninput="calcularTodo()" placeholder="0.00"></td></tr>
-                    <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input" placeholder="..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input" oninput="calcularTodo()" placeholder="0.00"></td></tr>
-                </tbody>
-            </table>
-        </section>
-
-        <section class="flex flex-col md:flex-row justify-between items-start gap-12">
-            <div class="w-full md:w-1/2">
-                <div id="bs_display_area" class="hidden bs-pdf-box border-l-4 border-[#E31E24]">
-                    <div class="flex justify-between items-start">
-                         <div class="flex-1">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Bolívares</p>
-                    <div id="total_bs_text" class="text-2xl font-black text-[#E31E24] my-1">0,00 Bs.</div>
-                    <p class="text-[8px] text-gray-400 italic mb-4">⚠️ Válido por 24 horas.</p>
-
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Datos de Pagomóvil BDV</p>
-                    <div class="text-[10px] text-gray-700 leading-relaxed font-bold">
-                        Cédula: <span class="font-normal">V18332193</span><br>
-                        Teléfono: <span class="font-normal">04245763648</span><br>
-                        Banco: <span class="font-normal">0102 - Banco de Venezuela</span>
-                    </div>
-                    </div>
-
-                    <div class="ml-4 text-center">
-                    <img src="qr-gustavo-bdv.png" alt="QR Pago" class="w-20 h-20 border p-1 bg-white shadow-sm">
-                    <p class="text-[7px] text-gray-400 uppercase font-bold mt-1">Escanea y Paga</p>
-                    </div>
+            <header class="flex justify-between items-start mb-12 pb-8 border-b border-gray-50">
+                <div>
+                    <img src="logo_kunston_pdf.png" alt="Logo" class="w-40 mb-3">
+                    <p class="text-[11px] font-bold text-gray-400 tracking-[0.3em] uppercase">Advertising Agency</p>
                 </div>
-            
-            <a href="https://bdvdigital.banvenez.com/pagomovil?id=V18332193&phone=584245763648&bank=0102&description=9dxBliWt4XnVSB0LTqNasQ%3D%3D" 
-               target="_blank" 
-               class="inline-block mt-4 bg-[#E31E24] text-white text-[9px] font-black py-2 px-6 rounded-full uppercase tracking-tighter hover:bg-black transition-all">
-               Pagar con App BDV
-            </a>
+                <div class="text-right">
+                    <h1 id="titulo_factura" class="text-3xl font-black uppercase text-[#003153] tracking-tighter mb-1">Nota de Entrega</h1>
+                    <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">N°: <span id="correlativo_display" class="text-gray-800">K-0000</span></p>
+                    <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Fecha: <span id="fecha-actual" class="text-gray-800">--/--/----</span></p>
+                </div>
+            </header>
+
+            <section class="mb-12">
+                <h3 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-4">Información del Cliente</h3>
+                <input type="text" id="nombre" placeholder="Nombre o Razón Social" class="w-full py-2 font-black text-xl text-gray-800 border-b border-gray-100 outline-none mb-4 uppercase">
+                <div class="grid grid-cols-2 gap-x-12 gap-y-4">
+                    <input type="text" id="rif" placeholder="RIF / Cédula" class="py-1 text-sm text-gray-600 border-b border-gray-50 outline-none">
+                    <input type="text" id="telefono" placeholder="Teléfono" class="py-1 text-sm text-gray-600 border-b border-gray-50 outline-none">
+                    <input type="email" id="email" placeholder="Correo" class="py-1 text-sm text-gray-600 border-b border-gray-50 outline-none">
+                    <input type="text" id="ciudad" placeholder="Ciudad" class="py-1 text-sm text-gray-600 border-b border-gray-50 outline-none">
+                    <input type="text" id="direccion" placeholder="Dirección Fiscal" class="py-1 text-sm text-gray-600 border-b border-gray-50 outline-none col-span-2">
+                </div>
+            </section>
+
+            <section class="mb-12">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="border-b-2 border-gray-800">
+                            <th class="py-4 text-[10px] font-black uppercase text-gray-800 tracking-[0.2em]">Descripción</th>
+                            <th class="py-4 text-[10px] font-black uppercase text-gray-800 text-right w-40 tracking-[0.2em]">Monto (USD)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="items-body">
+                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="w-full text-sm desc-input outline-none" placeholder="Servicio..."></td><td class="py-4"><input type="number" step="0.01" class="w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()"></td></tr>
+                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="w-full text-sm desc-input outline-none"></td><td class="py-4"><input type="number" step="0.01" class="w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()"></td></tr>
+                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="w-full text-sm desc-input outline-none"></td><td class="py-4"><input type="number" step="0.01" class="w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()"></td></tr>
+                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="w-full text-sm desc-input outline-none"></td><td class="py-4"><input type="number" step="0.01" class="w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()"></td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="flex justify-between items-start gap-12">
+                <div id="bs_display_area" class="hidden border-l-4 border-red-600 p-4 bg-gray-50 w-1/2">
+                    <p class="text-[9px] font-black text-gray-400 uppercase">Total Bolívares</p>
+                    <div id="total_bs_text" class="text-xl font-black text-red-600 my-1">0,00 Bs.</div>
+                    <p class="text-[8px] text-gray-400 font-bold uppercase">Pago Móvil: 04245763648 | BDV</p>
+                </div>
+                <div class="w-1/3 space-y-2">
+                    <div class="flex justify-between text-[11px] font-bold text-gray-400 uppercase"><span>Subtotal</span><span id="subtotal_val">$0.00</span></div>
+                    <div id="iva_row" class="flex justify-between text-[11px] font-bold text-gray-400 uppercase hidden"><span>IVA (16%)</span><span id="iva_val">$0.00</span></div>
+                    <div class="flex justify-between text-xl border-t-4 border-[#003153] pt-4 font-black text-[#003153] uppercase"><span>Total</span><span id="final_usd">$0.00</span></div>
+                </div>
+            </section>
+
+            <footer class="absolute bottom-12 left-12 right-12 text-center border-t border-gray-100 pt-6">
+                <p class="text-[9px] text-gray-300 font-bold uppercase tracking-[0.5em]">Kunston Agency - Miranda, Venezuela</p>
+            </footer>
         </div>
-            </div>
 
-            <div class="w-full md:w-1/3 space-y-3 pt-4">
-                <div class="flex justify-between text-[11px] font-bold uppercase text-gray-400">
-                    <span>Subtotal</span>
-                    <span id="subtotal_val" class="text-gray-800">$0.00</span>
+        <div class="page-break"></div>
+
+        <div class="page-container p-12 relative" id="hoja2">
+            <div class="w-full h-2 bg-green-600 mb-10"></div>
+            <header class="flex justify-between items-start mb-16">
+                <img src="logo_kunston_pdf.png" class="w-40">
+                <div class="text-right">
+                    <h1 class="text-3xl font-black uppercase text-green-600 tracking-tighter">Recibo de Pago</h1>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Comprobante de Ingreso</p>
                 </div>
-                <div id="iva_row" class="flex justify-between text-[11px] font-bold uppercase text-gray-400 hidden">
-                    <span>IVA (16%)</span>
-                    <span id="iva_val" class="text-gray-800">$0.00</span>
+            </header>
+
+            <div class="border-2 border-dashed border-gray-100 p-12 rounded-3xl relative bg-gray-50/30">
+                <div class="absolute -top-3 left-8 bg-white px-6 text-[10px] font-black text-green-600 uppercase tracking-widest">Estado de Cuenta</div>
+                
+                <div class="space-y-8 py-6">
+                    <p class="text-lg text-gray-600 leading-relaxed">
+                        He recibido de <span id="recibo_cliente" class="font-black text-gray-900 border-b-2 border-gray-200 uppercase">---</span>
+                    </p>
+                    
+                    <div class="grid grid-cols-3 gap-8 py-6 border-y border-gray-100">
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Abono Hoy</p>
+                            <p id="recibo_monto_hoy" class="font-black text-green-600 text-2xl">$0.00</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Total Pagado</p>
+                            <p id="recibo_total_pagado" class="font-bold text-gray-800 text-2xl">$0.00</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Saldo Pendiente</p>
+                            <p id="recibo_saldo_pendiente" class="font-black text-red-600 text-2xl">$0.00</p>
+                        </div>
+                    </div>
+
+                    <p class="text-sm text-gray-500 uppercase font-bold tracking-widest">
+                        Concepto: Cancelación de <span id="recibo_factura_ref" class="text-gray-900">---</span>
+                    </p>
+                    
+                    <div class="grid grid-cols-2 gap-8 mt-12">
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Método de Pago</p>
+                            <p id="recibo_metodo" class="font-bold text-gray-800 uppercase">---</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Referencia</p>
+                            <p id="recibo_referencia" class="font-bold text-gray-800">---</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex justify-between text-2xl border-t-4 border-[#003153] pt-4">
-                    <span class="font-black uppercase tracking-tighter text-[#003153]">Total</span>
-                    <span id="final_usd" class="font-black text-[#003153]">$0.00</span>
+
+                <div class="mt-32 flex flex-col items-center">
+                    <div class="w-64 border-t-2 border-gray-900 pt-4 text-center">
+                        <p class="text-[11px] font-black uppercase text-gray-900">Administración Kunston</p>
+                        <p class="text-[9px] text-gray-300 font-bold uppercase mt-1">Sello y Firma Autorizada</p>
+                    </div>
                 </div>
             </div>
-        </section>
-
-        <footer class="absolute bottom-12 left-18 right-18 text-center border-t border-gray-100 pt-6">
-            <p class="text-[9px] text-gray-300 font-bold uppercase tracking-[0.5em]"></p>
-        </footer>
+            <footer class="absolute bottom-12 left-12 right-12 text-center text-[9px] text-gray-300 font-bold uppercase tracking-[0.5em]">
+                Comprobante Digital de Transacción
+            </footer>
+        </div>
     </div>
 
 <script>
-// 1. CONEXIÓN
-        const SUPABASE_URL = 'https://ydplbvargkztuncrmawn.supabase.co'; 
-        const SUPABASE_KEY = 'sb_publishable_zrErxvRH8Ac8NG0iRKm_qA_r18Uk9Nk';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
-        // NUEVA FUNCIÓN: EL CANDADO 
-        async function verificarSeguridad() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) {
-                // Si no hay sesión activa, redirige al login de inmediato
-                window.location.replace('login.html'); 
+    const SUPABASE_URL = 'https://ydplbvargkztuncrmawn.supabase.co'; 
+    const SUPABASE_KEY = 'sb_publishable_zrErxvRH8Ac8NG0iRKm_qA_r18Uk9Nk';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let globalTotalFactura = 0;
+    let globalAbonadoPrevio = 0;
+
+    async function verificarSeguridad() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) window.location.replace('login.html'); 
+    }
+
+    window.onload = async () => {
+        await verificarSeguridad(); 
+        document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
+        generarCorrelativo(); 
+        obtenerTasaBCV(); 
+    };
+
+    function cambiarMonedaAdmin() {
+        const metodo = document.getElementById('metodo_pago').value;
+        const label = document.getElementById('label_monto_abono');
+        label.innerText = (metodo === "Pago Móvil") ? "Monto (Bs.)" : "Monto (USD)";
+        label.classList.toggle('text-red-600', metodo === "Pago Móvil");
+        label.classList.toggle('text-green-600', metodo !== "Pago Móvil");
+    }
+
+    async function obtenerTasaBCV() {
+        try {
+            const res = await fetch('https://ve.dolarapi.com/v1/euros/oficial');
+            const d = await res.json();
+            if (d.promedio) { 
+                document.getElementById('tasa_bcv').value = d.promedio.toFixed(2); 
+                calcularTodo(); 
             }
+        } catch(e) { console.warn("Error Tasa"); }
+    }
+
+    function calcularTodo() {
+        let sub = 0;
+        document.querySelectorAll('.monto-input').forEach(i => sub += (parseFloat(i.value) || 0));
+        const tasa = parseFloat(document.getElementById('tasa_bcv').value) || 1;
+        const tipo = document.getElementById('tipo_doc').value;
+        let iva = (tipo === "Factura de Servicio") ? sub * 0.16 : 0;
+        const totalUsd = sub + iva;
+        const totalBs = totalUsd * tasa;
+
+        document.getElementById('subtotal_val').innerText = `$${totalUsd.toFixed(2)}`;
+        document.getElementById('iva_row').classList.toggle('hidden', tipo !== "Factura de Servicio");
+        document.getElementById('final_usd').innerText = `$${totalUsd.toFixed(2)}`;
+        document.getElementById('total_bs_text').innerText = `${totalBs.toLocaleString('es-VE')} Bs.`;
+        return totalUsd;
+    }
+
+    function toggleBsView() {
+        document.getElementById('bs_display_area').classList.toggle('hidden', !document.getElementById('check_bs').checked);
+    }
+
+    async function generarCorrelativo() {
+        const { data } = await supabaseClient.from('facturas').select('id').order('id', { ascending: false }).limit(1);
+        let num = (data && data.length > 0) ? data[0].id + 1 : 1;
+        document.getElementById('correlativo_display').innerText = `K-${num.toString().padStart(4, '0')}`;
+    }
+
+    async function buscarCliente() {
+        const bus = document.getElementById('nombre').value.trim();
+        const { data } = await supabaseClient.from('facturas').select('*').ilike('cliente_nombre', `%${bus}%`).order('id', { ascending: false }).limit(1);
+        if (data && data.length > 0) {
+            const c = data[0];
+            document.getElementById('nombre').value = c.cliente_nombre;
+            document.getElementById('rif').value = c.rif_cedula || '';
+            document.getElementById('telefono').value = c.telefono || '';
+            document.getElementById('email').value = c.email || '';
+            document.getElementById('ciudad').value = c.ciudad || '';
+            document.getElementById('direccion').value = c.direccion || '';
         }
+    }
 
-        // 2. INICIO (Único y definitivo)
-        window.onload = async () => {
-            // Primero verificamos si el usuario tiene permiso
-            await verificarSeguridad(); 
+    async function cargarFacturaPorID() {
+        const id = document.getElementById('search_id').value;
+        const { data: factura, error } = await supabaseClient.from('facturas').select('*').eq('id', id).single();
+        if (error) return alert("❌ No encontrada.");
 
-            // Si el código llega aquí, es porque hay una sesión activa
-            document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
-            generarCorrelativo(); 
-            obtenerTasaBCV(); 
+        document.getElementById('nombre').value = factura.cliente_nombre;
+        document.getElementById('rif').value = factura.rif_cedula || '';
+        document.getElementById('telefono').value = factura.telefono || '';
+        document.getElementById('email').value = factura.email || '';
+        document.getElementById('ciudad').value = factura.ciudad || '';
+        document.getElementById('direccion').value = factura.direccion || '';
+        document.getElementById('correlativo_display').innerText = `K-${factura.id.toString().padStart(4, '0')}`;
+        
+        globalTotalFactura = parseFloat(factura.monto_usd);
+        document.getElementById('final_usd').innerText = `$${globalTotalFactura.toFixed(2)}`;
+
+        const { data: recibos } = await supabaseClient.from('recibos').select('monto_pagado_usd').eq('cliente_nombre', factura.cliente_nombre);
+        globalAbonadoPrevio = recibos ? recibos.reduce((acc, r) => acc + parseFloat(r.monto_pagado_usd), 0) : 0;
+
+        actualizarUIAdmin();
+        alert(`✅ K-${id} Cargada.`);
+    }
+
+    function actualizarUIAdmin() {
+        const pendiente = globalTotalFactura - globalAbonadoPrevio;
+        document.getElementById('resumen_cuentas').classList.remove('hidden');
+        document.getElementById('val_abonado').innerText = `$${globalAbonadoPrevio.toFixed(2)}`;
+        document.getElementById('val_pendiente').innerText = `$${pendiente.toFixed(2)}`;
+        document.getElementById('status_pago').innerText = pendiente <= 0 ? "Estado: PAGADA" : `Estado: PENDIENTE ($${pendiente.toFixed(2)})`;
+    }
+
+    async function generarReciboPago() {
+        const inputMonto = document.getElementById('monto_abono_input');
+        let montoValor = parseFloat(inputMonto.value);
+        if (!montoValor || montoValor <= 0) return alert("⚠️ Ingresa un monto.");
+
+        const metodo = document.getElementById('metodo_pago').value;
+        const tasa = parseFloat(document.getElementById('tasa_bcv').value) || 1;
+        
+        // CONVERSIÓN LÓGICA: Si es Pago Móvil, lo que entró son Bs, así que dividimos por la tasa para guardar USD
+        let montoUSD = (metodo === "Pago Móvil") ? (montoValor / tasa) : montoValor;
+
+        const nombre = document.getElementById('nombre').value;
+        const facturaRef = document.getElementById('correlativo_display').innerText;
+        const ref = document.getElementById('ref_pago').value;
+
+        const totalPagadoHoy = globalAbonadoPrevio + montoUSD;
+        const saldoPendiente = globalTotalFactura - totalPagadoHoy;
+
+        document.getElementById('recibo_cliente').innerText = nombre;
+        document.getElementById('recibo_monto_hoy').innerText = `$${montoUSD.toFixed(2)}`;
+        document.getElementById('recibo_total_pagado').innerText = `$${totalPagadoHoy.toFixed(2)}`;
+        document.getElementById('recibo_saldo_pendiente').innerText = `$${saldoPendiente.toFixed(2)}`;
+        document.getElementById('recibo_factura_ref').innerText = `${facturaRef}`;
+        document.getElementById('recibo_metodo').innerText = metodo;
+        document.getElementById('recibo_referencia').innerText = ref || "N/A";
+
+        const { error } = await supabaseClient.from('recibos').insert([{
+            cliente_nombre: nombre,
+            monto_pagado_usd: montoUSD,
+            metodo_pago: metodo,
+            referencia: ref || 'Abono parcial'
+        }]);
+
+        if (error) return alert("Error DB: " + error.message);
+
+        const opt = {
+            margin: 0,
+            filename: `Recibo_${nombre}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true }, // Escala 2 para evitar cortes
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
+        
+        // Exportar ambas hojas
+        await html2pdf().set(opt).from(document.getElementById('factura-container')).save();
+        
+        globalAbonadoPrevio = totalPagadoHoy;
+        actualizarUIAdmin();
+        inputMonto.value = "";
+        document.getElementById('ref_pago').value = "";
+    }
 
-        // 3. FUNCIONES DE CÁLCULO Y AUTOMATIZACIÓN
-        function actualizarDocumento() {
-            const tipo = document.getElementById('tipo_doc').value;
-            document.getElementById('titulo_factura').innerText = tipo;
-            calcularTodo();
-        }
+    async function guardarYGenerar() {
+        const total = calcularTodo();
+        const nombre = document.getElementById('nombre').value;
+        if (!nombre || total <= 0) return alert("⚠️ Datos incompletos");
 
-        // Extraer tasa BCV (EURO) automáticamente
-        async function obtenerTasaBCV() {
-            const inputTasa = document.getElementById('tasa_bcv');
-            if (inputTasa.value) return; 
+        const { error } = await supabaseClient.from('facturas').insert([{
+            cliente_nombre: nombre, 
+            rif_cedula: document.getElementById('rif').value,
+            telefono: document.getElementById('telefono').value, 
+            email: document.getElementById('email').value,
+            ciudad: document.getElementById('ciudad').value,
+            direccion: document.getElementById('direccion').value,
+            monto_usd: total,
+            tasa_euro_bcv: parseFloat(document.getElementById('tasa_bcv').value) || 0
+        }]);
 
-            try {
-                console.log("⏳ Conectando con el Banco Central (Euro)...");
-                const respuesta = await fetch('https://ve.dolarapi.com/v1/euros/oficial');
-                if (!respuesta.ok) throw new Error("La API no respondió correctamente");
-                
-                const datos = await respuesta.json();
-                if (datos && datos.promedio) {
-                    inputTasa.value = datos.promedio.toFixed(2);
-                    calcularTodo();
-                    console.log("✅ Tasa Euro BCV obtenida con éxito:", datos.promedio);
-                }
-            } catch (error) {
-                console.warn("⚠️ Error obteniendo la tasa automática. Ingresa la tasa manualmente.", error);
-            }
-        }
+        if (error) return alert("Error: " + error.message);
 
-        function calcularTodo() {
-            let subtotal = 0;
-            document.querySelectorAll('.monto-input').forEach(m => {
-                const val = parseFloat(m.value) || 0;
-                subtotal += val;
-            });
-
-            const tasa = parseFloat(document.getElementById('tasa_bcv').value) || 0;
-            const tipo = document.getElementById('tipo_doc').value;
-            
-            let iva = (tipo === "Factura de Servicio") ? subtotal * 0.16 : 0;
-            document.getElementById('iva_row').classList.toggle('hidden', tipo !== "Factura de Servicio");
-
-            const totalUsd = subtotal + iva;
-            const totalBs = totalUsd * tasa;
-
-            document.getElementById('subtotal_val').innerText = `$${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            document.getElementById('iva_val').innerText = `$${iva.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            document.getElementById('final_usd').innerText = `$${totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            document.getElementById('total_bs_text').innerText = `${totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2})} Bs.`;
-
-            return { totalUsd, tasa, totalBs, tipo };
-        }
-
-        function toggleBsView() {
-            document.getElementById('bs_display_area').classList.toggle('hidden', !document.getElementById('check_bs').checked);
-        }
-
-        // 4. FUNCIONES DE BASE DE DATOS
-        async function buscarCliente() {
-            const bus = document.getElementById('nombre').value.trim();
-            if (!bus) return;
-            const { data } = await supabaseClient.from('facturas').select('*').ilike('cliente_nombre', `%${bus}%`).order('id', { ascending: false }).limit(1);
-            if (data && data.length > 0) {
-                const c = data[0];
-                document.getElementById('nombre').value = c.cliente_nombre;
-                document.getElementById('rif').value = c.rif_cedula || '';
-                document.getElementById('telefono').value = c.telefono || '';
-                document.getElementById('email').value = c.email || '';
-                document.getElementById('ciudad').value = c.ciudad || '';
-                document.getElementById('direccion').value = c.direccion || '';
-            }
-        }
-
-        async function generarCorrelativo() {
-            const { data } = await supabaseClient.from('facturas').select('id').order('id', { ascending: false }).limit(1);
-            let num = (data && data.length > 0) ? data[0].id + 1 : 1;
-            document.getElementById('correlativo_display').innerText = `K-${num.toString().padStart(4, '0')}`;
-        }
-
-        async function cargarFacturaPorID() {
-            const id = document.getElementById('search_id').value;
-            if (!id) return alert("⚠️ Ingresa un número.");
-
-            const { data, error } = await supabaseClient.from('facturas').select('*').eq('id', id).single();
-
-            if (error || !data) return alert("❌ No encontrada.");
-
-            // Rellenar datos básicos
-            document.getElementById('nombre').value = data.cliente_nombre || '';
-            document.getElementById('rif').value = data.rif_cedula || '';
-            document.getElementById('telefono').value = data.telefono || '';
-            document.getElementById('email').value = data.email || '';
-            document.getElementById('ciudad').value = data.ciudad || '';
-            document.getElementById('direccion').value = data.direccion || '';
-            document.getElementById('tasa_bcv').value = data.tasa_euro_bcv || '';
-            document.getElementById('correlativo_display').innerText = `K-${data.id.toString().padStart(4, '0')}`;
-
-            // Separar las cadenas de texto de vuelta a listas
-            const descs = data.descripcion_servicio ? data.descripcion_servicio.split(' | ') : [];
-            const montos = data.montos_individuales ? data.montos_individuales.split(' | ') : [];
-
-            const inputsDesc = document.querySelectorAll('.desc-input');
-            const inputsMonto = document.querySelectorAll('.monto-input');
-
-            // Limpiar campos antes de llenar
-            inputsDesc.forEach(i => i.value = '');
-            inputsMonto.forEach(i => i.value = '');
-
-            // Rellenar cada fila usando un bucle
-            descs.forEach((texto, index) => {
-                if (inputsDesc[index]) {
-                    inputsDesc[index].value = texto;
-                    inputsMonto[index].value = montos[index] || '';
-                }
-            });
-
-            calcularTodo(); 
-            alert(`✅ Factura K-${id} cargada con éxito.`);
-        }
-
-        async function guardarYGenerar() {
-            const d = calcularTodo();
-            const nombre = document.getElementById('nombre').value;
-            
-            const inputsDesc = document.querySelectorAll('.desc-input');
-            const inputsMonto = document.querySelectorAll('.monto-input');
-            
-            let descsArray = [];
-            let montosArray = [];
-
-            inputsDesc.forEach((input, index) => {
-                if (input.value.trim() !== "") {
-                    descsArray.push(input.value);
-                    montosArray.push(inputsMonto[index].value || 0);
-                }
-            });
-
-            if (!nombre || d.totalUsd <= 0) return alert("⚠️ Error: Nombre o montos vacíos.");
-
-            // Guardar en Supabase
-            const { error } = await supabaseClient.from('facturas').insert([{
-                cliente_nombre: nombre, 
-                rif_cedula: document.getElementById('rif').value,
-                telefono: document.getElementById('telefono').value, 
-                email: document.getElementById('email').value,
-                ciudad: document.getElementById('ciudad').value,
-                direccion: document.getElementById('direccion').value,
-                descripcion_servicio: descsArray.join(" | "), 
-                montos_individuales: montosArray.join(" | "),  
-                monto_usd: d.totalUsd,
-                tasa_euro_bcv: d.tasa, 
-                total_bs_referencia: d.totalBs
-            }]);
-
-            if (error) return alert("Error al guardar: " + error.message);
-
-            // Configurar PDF 
-            const opt = {
-                margin: 0,
-                filename: `Kunston_${d.tipo}_${nombre}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 3, 
-                    useCORS: true,
-                    letterRendering: true,
-                    scrollY: 0 
-                },
-                jsPDF: { 
-                    unit: 'mm', 
-                    format: 'a4', 
-                    orientation: 'portrait',
-                    compress: true
-                }
-            };
-            
-            await html2pdf().set(opt).from(document.getElementById('factura-container')).save();
-            setTimeout(() => location.reload(), 1500);
-        }
-    </script>
+        const opt = {
+            margin: 0,
+            filename: `Kunston_Nota_${nombre}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        // Exportar solo la Hoja 1
+        const hoja1 = document.getElementById('hoja1');
+        await html2pdf().set(opt).from(hoja1).save();
+        setTimeout(() => location.reload(), 1500);
+    }
+</script>
 </body>
 </html>
