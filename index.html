@@ -10,66 +10,77 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Corrección para evitar que el PDF se corte */
-        .page-container { width: 210mm; min-height: 297mm; margin: 0 auto; background: white; }
-        .page-break { page-break-before: always; }
+        /* CSS CRÍTICO PARA EVITAR CORTES EN PDF */
+        .page-container { 
+            width: 210mm; 
+            min-height: 297mm; 
+            padding: 15mm; 
+            margin: 0 auto; 
+            background: white; 
+            position: relative;
+            box-sizing: border-box; /* Evita que el padding ensanche la hoja */
+        }
+        
+        /* Forzar salto de página real */
+        .html2pdf__page-break { 
+            display: block; 
+            height: 0; 
+            page-break-before: always; 
+        }
+
         @media print { .no-print { display: none; } }
+        body { background-color: #f3f4f6; font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body class="bg-gray-100 pb-20 font-['Inter']">
+<body class="pb-20">
 
-    <div class="max-w-[210mm] mx-auto mb-4 no-print bg-white p-6 rounded-xl shadow-md border-l-8 border-[#003153] mt-8">
+    <div class="max-w-[210mm] mx-auto mb-4 no-print bg-white p-6 rounded-xl shadow-lg border-l-8 border-[#003153] mt-8">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Panel de Control Kunston</h2>
-            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold uppercase">v4.7 Master</span>
+            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold">v5.0 FINAL</span>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end border-b pb-6 border-gray-50">
             <div>
-                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Tipo de Documento</label>
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Documento</label>
                 <select id="tipo_doc" onchange="actualizarDocumento()" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold bg-gray-50 outline-none focus:border-orange-500">
                     <option value="Nota de Entrega">Nota de Entrega</option>
                     <option value="Factura de Servicio">Factura de Servicio</option>
                 </select>
             </div>
             <div>
-                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Tasa BCV (Euro/USD)</label>
-                <input type="number" id="tasa_bcv" step="0.01" oninput="calcularTodo()" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold outline-none focus:border-orange-500" placeholder="0.00">
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Tasa BCV (Euro)</label>
+                <input type="number" id="tasa_bcv" step="0.01" oninput="calcularTodo()" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold outline-none focus:border-orange-500">
             </div>
             <div class="flex items-center gap-3 pb-3">
                 <input type="checkbox" id="check_bs" onchange="toggleBsView()" class="w-5 h-5 accent-orange-500 cursor-pointer">
-                <label for="check_bs" class="text-[10px] font-bold uppercase text-gray-600 cursor-pointer">Mostrar Bolívares</label>
+                <label for="check_bs" class="text-[10px] font-bold uppercase text-gray-600 cursor-pointer">Mostrar Bs.</label>
             </div>
-            <button onclick="guardarYGenerar()" class="w-full bg-[#003153] text-white py-3 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all shadow-lg">
-                Generar y Guardar
+            <button onclick="guardarYGenerar()" class="w-full bg-[#003153] text-white py-3 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all">
+                Guardar y Descargar
             </button>
         </div>
 
-        <div class="mt-6 flex items-end gap-6">
-            <div class="flex-1">
-                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Cargar Factura (N°)</label>
-                <div class="flex gap-2">
-                    <input type="number" id="search_id" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold outline-none focus:border-orange-500" placeholder="Ej: 8">
-                    <button onclick="cargarFacturaPorID()" class="bg-gray-100 px-4 rounded-lg hover:bg-gray-200 transition-colors">🔍</button>
-                </div>
+        <div class="mt-4 flex items-center justify-between">
+            <div class="flex gap-2 items-center">
+                <input type="number" id="search_id" class="border-2 border-gray-100 p-2 rounded-lg font-bold w-24 outline-none focus:border-orange-500" placeholder="ID">
+                <button onclick="cargarFacturaPorID()" class="bg-gray-100 p-2 rounded-lg hover:bg-gray-200">🔍 Buscar</button>
             </div>
-            <div class="flex-1 text-right">
-                <p id="status_pago" class="text-[10px] font-black uppercase text-gray-300 tracking-widest">Estado: Sin cargar</p>
-            </div>
+            <p id="status_pago" class="text-[10px] font-black uppercase text-gray-400">Estado: Sin cargar</p>
         </div>
     </div>
 
-    <div id="admin-panel" class="max-w-[210mm] mx-auto mb-8 no-print bg-white p-6 rounded-xl shadow-md border-l-8 border-green-600">
+    <div id="admin-panel" class="max-w-[210mm] mx-auto mb-8 no-print bg-white p-6 rounded-xl shadow-lg border-l-8 border-green-600">
         <div class="flex items-center justify-between mb-4">
-            <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Administrador de Abonos</h2>
+            <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Registrar Pago / Abono</h2>
             <div id="resumen_cuentas" class="text-[10px] font-bold text-green-600 hidden">
-                Abonado: <span id="val_abonado">$0</span> | Pendiente: <span id="val_pendiente">$0</span>
+                Pagado: <span id="val_abonado">$0</span> | Pendiente: <span id="val_pendiente">$0</span>
             </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
                 <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Método</label>
-                <select id="metodo_pago" onchange="cambiarMonedaAdmin()" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold bg-gray-50 outline-none focus:border-green-500">
+                <select id="metodo_pago" onchange="cambiarMonedaAdmin()" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold bg-gray-50 outline-none">
                     <option value="Pago Móvil">Pago Móvil</option>
                     <option value="Zelle">Zelle</option>
                     <option value="Efectivo">Efectivo</option>
@@ -78,87 +89,87 @@
             </div>
             <div>
                 <label class="block text-[10px] font-bold uppercase text-gray-500 mb-2">Referencia</label>
-                <input type="text" id="ref_pago" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold outline-none focus:border-green-500" placeholder="Confirmación">
+                <input type="text" id="ref_pago" class="w-full border-2 border-gray-100 p-2 rounded-lg font-bold outline-none" placeholder="# Confirma">
             </div>
             <div>
-                <label id="label_monto_abono" class="block text-[10px] font-bold uppercase text-green-600 mb-2">Monto (Bs.)</label>
-                <input type="number" id="monto_abono_input" step="0.01" class="w-full border-2 border-green-100 p-2 rounded-lg font-bold outline-none focus:border-green-500" placeholder="0.00">
+                <label id="label_monto_abono" class="block text-[10px] font-bold uppercase text-red-600 mb-2">Monto (Bs.)</label>
+                <input type="number" id="monto_abono_input" step="0.01" class="w-full border-2 border-green-100 p-2 rounded-lg font-bold outline-none" placeholder="0.00">
             </div>
-            <button onclick="generarReciboPago()" class="w-full bg-green-600 text-white py-3 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all shadow-lg">
-                Registrar Pago
+            <button onclick="generarReciboPago()" class="w-full bg-green-600 text-white py-3 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all">
+                Registrar y Recibo
             </button>
         </div>
     </div>
 
     <div id="factura-container">
         
-        <div class="page-container p-12 relative" id="hoja1">
-            <div class="w-full h-2 bg-[#003153] mb-10"></div>
+        <div id="hoja1" class="page-container mx-auto">
+            <div class="w-full h-2 bg-[#003153] mb-8"></div>
             
-            <header class="flex justify-between items-start mb-12 pb-8 border-b border-gray-50">
+            <header class="flex justify-between items-start mb-10 pb-6 border-b">
                 <div>
-                    <img src="logo_kunston_pdf.png" alt="Logo" class="w-40 mb-3">
-                    <p class="text-[11px] font-bold text-gray-400 tracking-[0.3em] uppercase">Advertising Agency</p>
+                    <img src="logo_kunston_pdf.png" alt="Logo" class="w-44 mb-2">
+                    <p class="text-[10px] font-bold text-gray-400 tracking-[0.3em] uppercase">Advertising Agency</p>
                 </div>
                 <div class="text-right">
-                    <h1 id="titulo_factura" class="text-3xl font-black uppercase text-[#003153] tracking-tighter mb-1">Nota de Entrega</h1>
-                    <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">N°: <span id="correlativo_display" class="text-gray-800">K-0000</span></p>
-                    <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Fecha: <span id="fecha-actual" class="text-gray-800">--/--/----</span></p>
+                    <h1 id="titulo_factura" class="text-3xl font-black uppercase text-[#003153] tracking-tighter">Nota de Entrega</h1>
+                    <p class="text-gray-400 text-[10px] font-bold uppercase">N°: <span id="correlativo_display" class="text-gray-900">K-0000</span></p>
+                    <p class="text-gray-400 text-[10px] font-bold uppercase">Fecha: <span id="fecha-actual" class="text-gray-900">--/--/--</span></p>
                 </div>
             </header>
 
-            <section class="mb-12">
-                <h3 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-4">Información del Cliente</h3>
-                <input type="text" id="nombre" placeholder="Nombre o Razón Social" class="w-full py-2 font-black text-xl text-gray-800 border-b border-gray-100 outline-none mb-4 uppercase">
+            <section class="mb-10">
+                <h3 class="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-4">Datos del Cliente</h3>
+                <input type="text" id="nombre" placeholder="CLIENTE" class="w-full py-1 font-black text-xl text-gray-900 border-b border-gray-100 outline-none uppercase mb-4">
                 <div class="grid grid-cols-2 gap-x-12 gap-y-4">
-                    <input type="text" id="rif" placeholder="RIF / Cédula" class="py-1 text-sm text-gray-600 border-b border-gray-50 outline-none">
-                    <input type="text" id="telefono" placeholder="Teléfono" class="py-1 text-sm text-gray-600 border-b border-gray-50 outline-none">
-                    <input type="email" id="email" placeholder="Correo" class="py-1 text-sm text-gray-600 border-b border-gray-50 outline-none">
-                    <input type="text" id="ciudad" placeholder="Ciudad" class="py-1 text-sm text-gray-600 border-b border-gray-50 outline-none">
-                    <input type="text" id="direccion" placeholder="Dirección Fiscal" class="py-1 text-sm text-gray-600 border-b border-gray-50 outline-none col-span-2">
+                    <input type="text" id="rif" placeholder="RIF" class="py-1 text-sm border-b border-gray-50 outline-none">
+                    <input type="text" id="telefono" placeholder="Teléfono" class="py-1 text-sm border-b border-gray-50 outline-none">
+                    <input type="email" id="email" placeholder="Email" class="py-1 text-sm border-b border-gray-50 outline-none">
+                    <input type="text" id="ciudad" placeholder="Ciudad" class="py-1 text-sm border-b border-gray-50 outline-none">
+                    <input type="text" id="direccion" placeholder="Dirección" class="py-1 text-sm border-b border-gray-50 outline-none col-span-2">
                 </div>
             </section>
 
-            <section class="mb-12">
+            <section class="mb-10">
                 <table class="w-full text-left">
-                    <thead>
-                        <tr class="border-b-2 border-gray-800">
-                            <th class="py-4 text-[10px] font-black uppercase text-gray-800 tracking-[0.2em]">Descripción</th>
-                            <th class="py-4 text-[10px] font-black uppercase text-gray-800 text-right w-40 tracking-[0.2em]">Monto (USD)</th>
+                    <thead class="border-b-2 border-gray-900">
+                        <tr>
+                            <th class="py-3 text-[10px] font-black uppercase">Descripción del Servicio</th>
+                            <th class="py-3 text-[10px] font-black uppercase text-right w-32">Monto USD</th>
                         </tr>
                     </thead>
                     <tbody id="items-body">
-                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="w-full text-sm desc-input outline-none" placeholder="Servicio..."></td><td class="py-4"><input type="number" step="0.01" class="w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()"></td></tr>
-                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="w-full text-sm desc-input outline-none"></td><td class="py-4"><input type="number" step="0.01" class="w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()"></td></tr>
-                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="w-full text-sm desc-input outline-none"></td><td class="py-4"><input type="number" step="0.01" class="w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()"></td></tr>
-                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="w-full text-sm desc-input outline-none"></td><td class="py-4"><input type="number" step="0.01" class="w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()"></td></tr>
+                        <tr class="border-b border-gray-50"><td class="py-3"><input type="text" class="w-full text-sm desc-input outline-none"></td><td class="py-3"><input type="number" step="0.01" class="w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()"></td></tr>
+                        <tr class="border-b border-gray-50"><td class="py-3"><input type="text" class="w-full text-sm desc-input outline-none"></td><td class="py-3"><input type="number" step="0.01" class="w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()"></td></tr>
+                        <tr class="border-b border-gray-50"><td class="py-3"><input type="text" class="w-full text-sm desc-input outline-none"></td><td class="py-3"><input type="number" step="0.01" class="w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()"></td></tr>
+                        <tr class="border-b border-gray-50"><td class="py-3"><input type="text" class="w-full text-sm desc-input outline-none"></td><td class="py-3"><input type="number" step="0.01" class="w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()"></td></tr>
                     </tbody>
                 </table>
             </section>
 
-            <section class="flex justify-between items-start gap-12">
+            <section class="flex justify-between items-start mt-8">
                 <div id="bs_display_area" class="hidden border-l-4 border-red-600 p-4 bg-gray-50 w-1/2">
-                    <p class="text-[9px] font-black text-gray-400 uppercase">Total Bolívares</p>
-                    <div id="total_bs_text" class="text-xl font-black text-red-600 my-1">0,00 Bs.</div>
-                    <p class="text-[8px] text-gray-400 font-bold uppercase">Pago Móvil: 04245763648 | BDV</p>
+                    <p class="text-[9px] font-black text-gray-400 uppercase">Referencia en Bolívares</p>
+                    <div id="total_bs_text" class="text-2xl font-black text-red-600 my-1">0,00 Bs.</div>
+                    <p class="text-[8px] text-gray-400 font-bold uppercase">Pago Móvil: 04245763648 | C.I. 18332193 | BDV</p>
                 </div>
                 <div class="w-1/3 space-y-2">
                     <div class="flex justify-between text-[11px] font-bold text-gray-400 uppercase"><span>Subtotal</span><span id="subtotal_val">$0.00</span></div>
                     <div id="iva_row" class="flex justify-between text-[11px] font-bold text-gray-400 uppercase hidden"><span>IVA (16%)</span><span id="iva_val">$0.00</span></div>
-                    <div class="flex justify-between text-xl border-t-4 border-[#003153] pt-4 font-black text-[#003153] uppercase"><span>Total</span><span id="final_usd">$0.00</span></div>
+                    <div class="flex justify-between text-2xl border-t-4 border-[#003153] pt-4 font-black text-[#003153]"><span>TOTAL</span><span id="final_usd">$0.00</span></div>
                 </div>
             </section>
 
-            <footer class="absolute bottom-12 left-12 right-12 text-center border-t border-gray-100 pt-6">
-                <p class="text-[9px] text-gray-300 font-bold uppercase tracking-[0.5em]">Kunston Agency - Miranda, Venezuela</p>
+            <footer class="absolute bottom-10 left-10 right-10 text-center border-t pt-4">
+                <p class="text-[8px] text-gray-300 font-bold uppercase tracking-[0.4em]">Kunston Agency - Publicidad y Marketing</p>
             </footer>
         </div>
 
-        <div class="page-break"></div>
+        <div class="html2pdf__page-break"></div>
 
-        <div class="page-container p-12 relative" id="hoja2">
-            <div class="w-full h-2 bg-green-600 mb-10"></div>
-            <header class="flex justify-between items-start mb-16">
+        <div id="hoja2" class="page-container mx-auto">
+            <div class="w-full h-2 bg-green-600 mb-8"></div>
+            <header class="flex justify-between items-start mb-12">
                 <img src="logo_kunston_pdf.png" class="w-40">
                 <div class="text-right">
                     <h1 class="text-3xl font-black uppercase text-green-600 tracking-tighter">Recibo de Pago</h1>
@@ -166,36 +177,32 @@
                 </div>
             </header>
 
-            <div class="border-2 border-dashed border-gray-100 p-12 rounded-3xl relative bg-gray-50/30">
-                <div class="absolute -top-3 left-8 bg-white px-6 text-[10px] font-black text-green-600 uppercase tracking-widest">Estado de Cuenta</div>
-                
-                <div class="space-y-8 py-6">
-                    <p class="text-lg text-gray-600 leading-relaxed">
-                        He recibido de <span id="recibo_cliente" class="font-black text-gray-900 border-b-2 border-gray-200 uppercase">---</span>
-                    </p>
+            <div class="border-2 border-dashed border-gray-100 p-12 rounded-3xl bg-gray-50/50">
+                <div class="space-y-8">
+                    <p class="text-lg text-gray-600">Recibido de: <span id="recibo_cliente" class="font-black text-gray-900 border-b-2 border-gray-200 uppercase ml-2">---</span></p>
                     
-                    <div class="grid grid-cols-3 gap-8 py-6 border-y border-gray-100">
-                        <div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Abono Hoy</p>
+                    <div class="grid grid-cols-3 gap-6 py-8 border-y border-gray-100">
+                        <div class="text-center">
+                            <p class="text-[10px] font-black text-gray-400 uppercase mb-2">Abono Hoy</p>
                             <p id="recibo_monto_hoy" class="font-black text-green-600 text-2xl">$0.00</p>
                         </div>
-                        <div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Total Pagado</p>
+                        <div class="text-center">
+                            <p class="text-[10px] font-black text-gray-400 uppercase mb-2">Acumulado</p>
                             <p id="recibo_total_pagado" class="font-bold text-gray-800 text-2xl">$0.00</p>
                         </div>
-                        <div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Saldo Pendiente</p>
+                        <div class="text-center">
+                            <p class="text-[10px] font-black text-gray-400 uppercase mb-2">Por Pagar</p>
                             <p id="recibo_saldo_pendiente" class="font-black text-red-600 text-2xl">$0.00</p>
                         </div>
                     </div>
 
-                    <p class="text-sm text-gray-500 uppercase font-bold tracking-widest">
-                        Concepto: Cancelación de <span id="recibo_factura_ref" class="text-gray-900">---</span>
+                    <p class="text-sm font-bold text-gray-500 uppercase tracking-widest">
+                        Concepto: Pago correspondiente a <span id="recibo_factura_ref" class="text-gray-900">---</span>
                     </p>
                     
-                    <div class="grid grid-cols-2 gap-8 mt-12">
+                    <div class="grid grid-cols-2 gap-8 mt-6">
                         <div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Método de Pago</p>
+                            <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Vía de Pago</p>
                             <p id="recibo_metodo" class="font-bold text-gray-800 uppercase">---</p>
                         </div>
                         <div>
@@ -205,16 +212,13 @@
                     </div>
                 </div>
 
-                <div class="mt-32 flex flex-col items-center">
+                <div class="mt-40 flex flex-col items-center">
                     <div class="w-64 border-t-2 border-gray-900 pt-4 text-center">
-                        <p class="text-[11px] font-black uppercase text-gray-900">Administración Kunston</p>
-                        <p class="text-[9px] text-gray-300 font-bold uppercase mt-1">Sello y Firma Autorizada</p>
+                        <p class="text-[11px] font-black uppercase">Administración Kunston</p>
+                        <p class="text-[9px] text-gray-300 font-bold uppercase mt-1">Sello y Firma</p>
                     </div>
                 </div>
             </div>
-            <footer class="absolute bottom-12 left-12 right-12 text-center text-[9px] text-gray-300 font-bold uppercase tracking-[0.5em]">
-                Comprobante Digital de Transacción
-            </footer>
         </div>
     </div>
 
@@ -242,8 +246,7 @@
         const metodo = document.getElementById('metodo_pago').value;
         const label = document.getElementById('label_monto_abono');
         label.innerText = (metodo === "Pago Móvil") ? "Monto (Bs.)" : "Monto (USD)";
-        label.classList.toggle('text-red-600', metodo === "Pago Móvil");
-        label.classList.toggle('text-green-600', metodo !== "Pago Móvil");
+        label.className = (metodo === "Pago Móvil") ? "block text-[10px] font-bold uppercase text-red-600 mb-2" : "block text-[10px] font-bold uppercase text-green-600 mb-2";
     }
 
     async function obtenerTasaBCV() {
@@ -254,7 +257,7 @@
                 document.getElementById('tasa_bcv').value = d.promedio.toFixed(2); 
                 calcularTodo(); 
             }
-        } catch(e) { console.warn("Error Tasa"); }
+        } catch(e) { console.warn("Tasa no disponible"); }
     }
 
     function calcularTodo() {
@@ -283,20 +286,6 @@
         document.getElementById('correlativo_display').innerText = `K-${num.toString().padStart(4, '0')}`;
     }
 
-    async function buscarCliente() {
-        const bus = document.getElementById('nombre').value.trim();
-        const { data } = await supabaseClient.from('facturas').select('*').ilike('cliente_nombre', `%${bus}%`).order('id', { ascending: false }).limit(1);
-        if (data && data.length > 0) {
-            const c = data[0];
-            document.getElementById('nombre').value = c.cliente_nombre;
-            document.getElementById('rif').value = c.rif_cedula || '';
-            document.getElementById('telefono').value = c.telefono || '';
-            document.getElementById('email').value = c.email || '';
-            document.getElementById('ciudad').value = c.ciudad || '';
-            document.getElementById('direccion').value = c.direccion || '';
-        }
-    }
-
     async function cargarFacturaPorID() {
         const id = document.getElementById('search_id').value;
         const { data: factura, error } = await supabaseClient.from('facturas').select('*').eq('id', id).single();
@@ -317,7 +306,6 @@
         globalAbonadoPrevio = recibos ? recibos.reduce((acc, r) => acc + parseFloat(r.monto_pagado_usd), 0) : 0;
 
         actualizarUIAdmin();
-        alert(`✅ K-${id} Cargada.`);
     }
 
     function actualizarUIAdmin() {
@@ -325,18 +313,16 @@
         document.getElementById('resumen_cuentas').classList.remove('hidden');
         document.getElementById('val_abonado').innerText = `$${globalAbonadoPrevio.toFixed(2)}`;
         document.getElementById('val_pendiente').innerText = `$${pendiente.toFixed(2)}`;
-        document.getElementById('status_pago').innerText = pendiente <= 0 ? "Estado: PAGADA" : `Estado: PENDIENTE ($${pendiente.toFixed(2)})`;
+        document.getElementById('status_pago').innerText = pendiente <= 0 ? "Estado: PAGADA" : `Pendiente: $${pendiente.toFixed(2)}`;
     }
 
     async function generarReciboPago() {
         const inputMonto = document.getElementById('monto_abono_input');
         let montoValor = parseFloat(inputMonto.value);
-        if (!montoValor || montoValor <= 0) return alert("⚠️ Ingresa un monto.");
+        if (!montoValor || montoValor <= 0) return alert("⚠️ Ingresa el monto del abono.");
 
         const metodo = document.getElementById('metodo_pago').value;
         const tasa = parseFloat(document.getElementById('tasa_bcv').value) || 1;
-        
-        // CONVERSIÓN LÓGICA: Si es Pago Móvil, lo que entró son Bs, así que dividimos por la tasa para guardar USD
         let montoUSD = (metodo === "Pago Móvil") ? (montoValor / tasa) : montoValor;
 
         const nombre = document.getElementById('nombre').value;
@@ -346,6 +332,7 @@
         const totalPagadoHoy = globalAbonadoPrevio + montoUSD;
         const saldoPendiente = globalTotalFactura - totalPagadoHoy;
 
+        // Inyectar en Hoja 2
         document.getElementById('recibo_cliente').innerText = nombre;
         document.getElementById('recibo_monto_hoy').innerText = `$${montoUSD.toFixed(2)}`;
         document.getElementById('recibo_total_pagado').innerText = `$${totalPagadoHoy.toFixed(2)}`;
@@ -363,15 +350,16 @@
 
         if (error) return alert("Error DB: " + error.message);
 
+        // PDF CONFIG (HOJA 1 + HOJA 2)
         const opt = {
             margin: 0,
-            filename: `Recibo_${nombre}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true }, // Escala 2 para evitar cortes
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            filename: `Recibo_Kunston_${nombre}.pdf`,
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 2, useCORS: true, width: 794, windowWidth: 794 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['css', 'legacy'] }
         };
         
-        // Exportar ambas hojas
         await html2pdf().set(opt).from(document.getElementById('factura-container')).save();
         
         globalAbonadoPrevio = totalPagadoHoy;
@@ -401,12 +389,12 @@
         const opt = {
             margin: 0,
             filename: `Kunston_Nota_${nombre}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 2, useCORS: true, width: 794, windowWidth: 794 },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         
-        // Exportar solo la Hoja 1
+        // Solo Hoja 1
         const hoja1 = document.getElementById('hoja1');
         await html2pdf().set(opt).from(hoja1).save();
         setTimeout(() => location.reload(), 1500);
