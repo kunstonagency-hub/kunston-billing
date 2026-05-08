@@ -10,30 +10,41 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* CONFIGURACIÓN VITAL PARA QUE EL PDF NO SE CORTE */
-        .page-container {
+        /* Corrección vital para que el style.css no desborde la hoja A4 */
+        #factura-container {
+            box-sizing: border-box !important;
+            margin-bottom: 20px !important;
+        }
+        
+        /* Clonamos el estilo de tu style.css para la Hoja 2 sin alterar tu archivo */
+        #recibo-container {
             width: 210mm;
-            min-height: 297mm;
+            height: 296mm; 
+            padding: 18mm;
+            margin: 20px auto; 
             background: white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
             position: relative;
-            box-sizing: border-box; /* Esto evita que los márgenes empujen el contenido */
-            padding-bottom: 20mm;
+            overflow: hidden;
+            box-sizing: border-box !important;
         }
-        /* Forzar salto de página entre la Factura y el Recibo */
-        .html2pdf__page-break { 
-            display: block; 
-            height: 0; 
-            page-break-before: always; 
+
+        /* Salto de página estricto para el PDF */
+        .html2pdf__page-break { display: block; height: 0; page-break-before: always; }
+        
+        @media print { 
+            .no-print { display: none !important; } 
+            body { background: white; padding: 0; }
+            #factura-container, #recibo-container { box-shadow: none; margin: 0; }
         }
-        @media print { .no-print { display: none; } }
     </style>
 </head>
-<body class="bg-gray-50 pb-20">
+<body>
 
     <div class="max-w-[210mm] mx-auto mb-4 mt-8 no-print bg-white p-6 rounded-xl shadow-sm border-l-8 border-[#003153]">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Panel de Control Kunston</h2>
-            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold">v5.1 Master</span>
+            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold">v5.2 Master</span>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
@@ -102,9 +113,9 @@
         </div>
     </div>
 
-    <div id="factura-container" class="mx-auto" style="width: 210mm;">
+    <div id="pdf-wrapper">
         
-        <div id="hoja1" class="page-container p-0">
+        <div id="factura-container">
             <div class="gradient-line mb-10"></div>
             
             <header class="flex justify-between items-start mb-12 pb-8 border-b border-gray-50">
@@ -125,16 +136,16 @@
                 <h3 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-4">Información del Cliente</h3>
                 
                 <div class="flex items-center gap-2 mb-5">
-                    <input type="text" id="nombre" placeholder="Nombre o Razón Social" class="factura-input w-full py-1 font-black text-lg text-gray-800 border-b border-gray-100 focus:border-orange-500 outline-none">
+                    <input type="text" id="nombre" placeholder="Nombre o Razón Social" class="factura-input w-full py-1 font-black text-lg text-gray-800 border-b border-gray-100 focus:border-orange-500">
                     <button onclick="buscarCliente()" class="no-print text-gray-300 hover:text-orange-500 transition-colors">🔍</button>
                 </div>
 
                 <div class="grid grid-cols-2 gap-x-16 gap-y-5">
-                    <input type="text" id="rif" placeholder="RIF / Cédula" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100 outline-none">
-                    <input type="text" id="telefono" placeholder="Teléfono" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100 outline-none">
-                    <input type="email" id="email" placeholder="Correo Electrónico" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100 outline-none">
-                    <input type="text" id="ciudad" placeholder="Ciudad (Ej: Caracas / Guarenas)" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100 outline-none">
-                    <input type="text" id="direccion" placeholder="Dirección Fiscal" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100 col-span-2 outline-none">
+                    <input type="text" id="rif" placeholder="RIF / Cédula" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100">
+                    <input type="text" id="telefono" placeholder="Teléfono" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100">
+                    <input type="email" id="email" placeholder="Correo Electrónico" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100">
+                    <input type="text" id="ciudad" placeholder="Ciudad (Ej: Caracas / Guarenas)" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100">
+                    <input type="text" id="direccion" placeholder="Dirección Fiscal" class="factura-input w-full py-1 text-sm text-gray-600 border-b border-gray-100 col-span-2">
                 </div>
             </section>
 
@@ -147,10 +158,10 @@
                         </tr>
                     </thead>
                     <tbody id="items-body">
-                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input outline-none" placeholder="Detalle del servicio..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()" placeholder="0.00"></td></tr>
-                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input outline-none" placeholder="..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()" placeholder="0.00"></td></tr>
-                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input outline-none" placeholder="..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()" placeholder="0.00"></td></tr>
-                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input outline-none" placeholder="..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input outline-none" oninput="calcularTodo()" placeholder="0.00"></td></tr>
+                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input" placeholder="Detalle del servicio..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input" oninput="calcularTodo()" placeholder="0.00"></td></tr>
+                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input" placeholder="..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input" oninput="calcularTodo()" placeholder="0.00"></td></tr>
+                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input" placeholder="..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input" oninput="calcularTodo()" placeholder="0.00"></td></tr>
+                        <tr class="border-b border-gray-50"><td class="py-4"><input type="text" class="factura-input w-full text-sm desc-input" placeholder="..."></td><td class="py-4"><input type="number" step="0.01" class="factura-input w-full text-right font-bold text-sm monto-input" oninput="calcularTodo()" placeholder="0.00"></td></tr>
                     </tbody>
                 </table>
             </section>
@@ -176,6 +187,9 @@
                                 <p class="text-[7px] text-gray-400 uppercase font-bold mt-1">Escanea y Paga</p>
                             </div>
                         </div>
+                        <a href="https://bdvdigital.banvenez.com/pagomovil?id=V18332193&phone=584245763648&bank=0102&description=9dxBliWt4XnVSB0LTqNasQ%3D%3D" target="_blank" class="no-print inline-block mt-4 bg-[#E31E24] text-white text-[9px] font-black py-2 px-6 rounded-full uppercase tracking-tighter hover:bg-black transition-all">
+                            Pagar con App BDV
+                        </a>
                     </div>
                 </div>
 
@@ -194,22 +208,18 @@
                     </div>
                 </div>
             </section>
-            
-            <footer class="absolute bottom-6 left-0 right-0 text-center border-t border-gray-100 pt-6 mx-10">
-                <p class="text-[9px] text-gray-300 font-bold uppercase tracking-[0.5em]">Kunston Agency - Publicidad y Marketing</p>
-            </footer>
         </div>
 
         <div class="html2pdf__page-break"></div>
 
-        <div id="hoja2" class="page-container p-0">
-            <div class="w-full h-2 bg-green-600 mb-10"></div>
+        <div id="recibo-container">
+            <div class="gradient-line mb-10" style="background: linear-gradient(90deg, #16a34a, #86efac);"></div>
             <header class="flex justify-between items-start mb-16">
                 <div class="logo-wrapper mb-3">
                     <img src="logo_kunston_pdf.png" alt="Kunston Agency">
                 </div>
                 <div class="text-right">
-                    <h1 class="text-3xl font-black uppercase text-green-600 tracking-tighter">Recibo de Pago</h1>
+                    <h1 class="text-3xl font-black uppercase text-green-600 tracking-tighter mb-1">Recibo de Pago</h1>
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Comprobante de Ingreso</p>
                 </div>
             </header>
@@ -264,7 +274,7 @@
     </div>
 
 <script>
-    // 1. CONEXIÓN Y VARIABLES GLOBALES
+    // 1. CONEXIÓN Y GLOBALES
     const SUPABASE_URL = 'https://ydplbvargkztuncrmawn.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_zrErxvRH8Ac8NG0iRKm_qA_r18Uk9Nk';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -272,7 +282,7 @@
     let globalTotalFactura = 0;
     let globalAbonadoPrevio = 0;
 
-    // 2. SEGURIDAD Y ARRANQUE
+    // 2. SEGURIDAD
     async function verificarSeguridad() {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) { window.location.replace('login.html'); }
@@ -285,7 +295,7 @@
         obtenerTasaBCV(); 
     };
 
-    // 3. LÓGICA DE UI Y CÁLCULO
+    // 3. UI Y CÁLCULO
     function actualizarDocumento() {
         const tipo = document.getElementById('tipo_doc').value;
         document.getElementById('titulo_factura').innerText = tipo;
@@ -339,7 +349,7 @@
         document.getElementById('bs_display_area').classList.toggle('hidden', !document.getElementById('check_bs').checked);
     }
 
-    // 4. BASE DE DATOS Y ABONOS
+    // 4. BASE DE DATOS
     async function generarCorrelativo() {
         const { data } = await supabaseClient.from('facturas').select('id').order('id', { ascending: false }).limit(1);
         let num = (data && data.length > 0) ? data[0].id + 1 : 1;
@@ -447,17 +457,17 @@
 
         if (error) return alert("Error al guardar recibo: " + error.message);
 
-        // CONFIGURACIÓN DE PDF ANTI-CORTES (AMBAS HOJAS)
+        // CONFIGURACIÓN DE PDF (AMBAS HOJAS) - Forzamos el ancho a 794px para evitar recortes
         const opt = {
             margin: 0,
             filename: `Recibo_${nombre}.pdf`,
-            image: { type: 'jpeg', quality: 1 },
+            image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2, useCORS: true, width: 794, windowWidth: 794 },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak: { mode: ['css', 'legacy'] }
         };
         
-        await html2pdf().set(opt).from(document.getElementById('factura-container')).save();
+        await html2pdf().set(opt).from(document.getElementById('pdf-wrapper')).save();
         
         globalAbonadoPrevio = totalPagadoHoy;
         actualizarUIAdmin();
@@ -499,16 +509,16 @@
 
         if (error) return alert("Error al guardar: " + error.message);
 
-        // CONFIGURACIÓN DE PDF ANTI-CORTES (SOLO HOJA 1)
+        // CONFIGURACIÓN DE PDF (SOLO HOJA 1)
         const opt = {
             margin: 0,
             filename: `Kunston_${d.tipo}_${nombre}.pdf`,
-            image: { type: 'jpeg', quality: 1 },
+            image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2, useCORS: true, width: 794, windowWidth: 794 },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         
-        const hoja1 = document.getElementById('hoja1');
+        const hoja1 = document.getElementById('factura-container');
         await html2pdf().set(opt).from(hoja1).save();
         setTimeout(() => location.reload(), 1500);
     }
