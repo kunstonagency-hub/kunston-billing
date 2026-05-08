@@ -10,13 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Corrección vital para que el padding de style.css no desborde la hoja A4 */
+        /* Correcciones visuales y anti-cortes */
         #factura-container {
             box-sizing: border-box !important;
             margin-bottom: 20px auto;
         }
         
-        /* Clonamos exactamente tu estilo de style.css para la Hoja 2 del Recibo */
         #recibo-container {
             width: 210mm;
             height: 296mm; 
@@ -29,16 +28,19 @@
             margin: 20px auto; 
         }
 
-        /* Salto de página estricto para que la Hoja 2 pase abajo en el PDF */
         .html2pdf__page-break { display: block; height: 0; page-break-before: always; }
         
-        /* EL TRUCO MÁGICO: Elimina los márgenes temporalmente SOLO cuando toma la foto del PDF */
         .generando-pdf #factura-container,
         .generando-pdf #recibo-container {
             margin: 0 !important;
             box-shadow: none !important;
             border: none !important;
         }
+
+        /* Estilo para el historial de abonos */
+        .historial-scroll { max-height: 120px; overflow-y: auto; }
+        .historial-scroll::-webkit-scrollbar { width: 4px; }
+        .historial-scroll::-webkit-scrollbar-thumb { background-color: #86efac; border-radius: 4px; }
 
         @media print { 
             .no-print { display: none !important; } 
@@ -51,7 +53,7 @@
     <div class="max-w-[210mm] mx-auto mb-4 mt-8 no-print bg-white p-6 rounded-xl shadow-sm border-l-8 border-[#003153]">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Panel de Control Kunston</h2>
-            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold">v5.4 Master</span>
+            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold">v5.5 Master</span>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
@@ -93,7 +95,7 @@
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Módulo de Cobranza</h2>
             <div id="resumen_cuentas" class="text-[10px] font-bold text-green-600 hidden">
-                Abonado: <span id="val_abonado">$0</span> | Pendiente: <span id="val_pendiente">$0</span>
+                Acumulado: <span id="val_abonado">$0</span> | <span class="text-gray-400">Restante:</span> <span id="val_pendiente" class="text-red-500">$0</span>
             </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -117,6 +119,14 @@
             <button onclick="generarReciboPago()" class="w-full bg-green-600 text-white py-3 rounded-lg font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all shadow-lg">
                 Registrar Recibo
             </button>
+        </div>
+
+        <div id="historial_abonos" class="col-span-1 md:col-span-4 mt-6 hidden border-t-2 border-green-50 pt-4">
+            <h3 class="text-[10px] font-black uppercase text-green-700 mb-3 tracking-widest">📋 Historial de Pagos Previos del Cliente</h3>
+            <div class="historial-scroll pr-2">
+                <ul id="lista_historial" class="text-xs text-gray-600 space-y-2">
+                    </ul>
+            </div>
         </div>
     </div>
 
@@ -285,13 +295,14 @@
     </div>
 
 <script>
+    // 1. CONEXIÓN Y GLOBALES
     const SUPABASE_URL = 'https://ydplbvargkztuncrmawn.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_zrErxvRH8Ac8NG0iRKm_qA_r18Uk9Nk';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let globalTotalFactura = 0;
     let globalAbonadoPrevio = 0;
 
+    // 2. SEGURIDAD
     async function verificarSeguridad() {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) { window.location.replace('login.html'); }
@@ -304,6 +315,7 @@
         obtenerTasaBCV(); 
     };
 
+    // 3. UI Y CÁLCULO
     function actualizarDocumento() {
         const tipo = document.getElementById('tipo_doc').value;
         document.getElementById('titulo_factura').innerText = tipo;
@@ -350,6 +362,12 @@
         document.getElementById('final_usd').innerText = `$${totalUsd.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
         document.getElementById('total_bs_text').innerText = `${totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2})} Bs.`;
 
+        // RE-CÁLCULO DINÁMICO DEL PANEL DE ADMINISTRADOR
+        const pendiente = totalUsd - globalAbonadoPrevio;
+        document.getElementById('resumen_cuentas').classList.remove('hidden');
+        document.getElementById('val_abonado').innerText = `$${globalAbonadoPrevio.toFixed(2)}`;
+        document.getElementById('val_pendiente').innerText = `$${pendiente.toFixed(2)}`;
+
         return { totalUsd, tasa, totalBs, tipo };
     }
 
@@ -357,6 +375,7 @@
         document.getElementById('bs_display_area').classList.toggle('hidden', !document.getElementById('check_bs').checked);
     }
 
+    // 4. BASE DE DATOS E HISTORIAL
     async function generarCorrelativo() {
         const { data } = await supabaseClient.from('facturas').select('id').order('id', { ascending: false }).limit(1);
         let num = (data && data.length > 0) ? data[0].id + 1 : 1;
@@ -410,24 +429,45 @@
             }
         });
 
-        calcularTodo();
+        // Cargar Historial de Abonos
+        const { data: recibos } = await supabaseClient.from('recibos').select('*').eq('cliente_nombre', data.cliente_nombre);
+        globalAbonadoPrevio = 0;
         
-        // Cargar Contabilidad
-        globalTotalFactura = parseFloat(data.monto_usd);
-        const { data: recibos } = await supabaseClient.from('recibos').select('monto_pagado_usd').eq('cliente_nombre', data.cliente_nombre);
-        globalAbonadoPrevio = recibos ? recibos.reduce((acc, r) => acc + parseFloat(r.monto_pagado_usd), 0) : 0;
+        const listaHistorial = document.getElementById('lista_historial');
+        listaHistorial.innerHTML = ''; // Limpiar lista
+
+        if (recibos && recibos.length > 0) {
+            recibos.forEach(r => {
+                globalAbonadoPrevio += parseFloat(r.monto_pagado_usd);
+                const li = document.createElement('li');
+                li.className = "flex justify-between items-center border-b border-gray-100 pb-2";
+                
+                // Formatear la fecha
+                const fechaStr = r.fecha_pago || r.created_at;
+                const fecha = fechaStr ? new Date(fechaStr).toLocaleDateString('es-ES') : 'N/A';
+                
+                li.innerHTML = `
+                    <span>
+                        <span class="font-black text-gray-800">${fecha}</span> | 
+                        <span class="font-bold text-green-600">${r.metodo_pago}</span> | 
+                        Ref: <span class="text-gray-500">${r.referencia || 'N/A'}</span>
+                    </span> 
+                    <span class="font-black text-green-700 bg-green-50 px-2 py-1 rounded-md">$${parseFloat(r.monto_pagado_usd).toFixed(2)}</span>
+                `;
+                listaHistorial.appendChild(li);
+            });
+            document.getElementById('historial_abonos').classList.remove('hidden');
+        } else {
+            document.getElementById('historial_abonos').classList.add('hidden');
+        }
+
+        // Esto forzará el cálculo de totales actuales y arreglará lo del saldo negativo
+        calcularTodo(); 
         
-        actualizarUIAdmin();
         alert(`✅ Factura K-${id} cargada con éxito.`);
     }
 
-    function actualizarUIAdmin() {
-        const pendiente = globalTotalFactura - globalAbonadoPrevio;
-        document.getElementById('resumen_cuentas').classList.remove('hidden');
-        document.getElementById('val_abonado').innerText = `$${globalAbonadoPrevio.toFixed(2)}`;
-        document.getElementById('val_pendiente').innerText = `$${pendiente.toFixed(2)}`;
-    }
-
+    // 5. EXPORTACIÓN PDF CON TRUCO ANTI-CORTES
     async function generarReciboPago() {
         const inputMonto = document.getElementById('monto_abono_input');
         let montoValor = parseFloat(inputMonto.value);
@@ -441,10 +481,12 @@
         const facturaRef = document.getElementById('correlativo_display').innerText;
         const ref = document.getElementById('ref_pago').value;
 
+        // Ahora usamos el total actual calculado en pantalla, no un número estático viejo
+        const totalActualFactura = calcularTodo().totalUsd;
         const totalPagadoHoy = globalAbonadoPrevio + montoUSD;
-        const saldoPendiente = globalTotalFactura - totalPagadoHoy;
+        const saldoPendiente = totalActualFactura - totalPagadoHoy;
 
-        // --- LÓGICA PARA MOSTRAR BS AL LADO DE LA REFERENCIA ---
+        // Inyectar referencia con Bolívares
         let textoReferencia = ref || "Sin referencia";
         if (metodo === "Pago Móvil") {
             textoReferencia += ` | ${montoValor.toLocaleString('es-VE', {minimumFractionDigits: 2})} Bs.`;
@@ -488,7 +530,7 @@
         document.body.classList.remove('generando-pdf');
         
         globalAbonadoPrevio = totalPagadoHoy;
-        actualizarUIAdmin();
+        calcularTodo(); // Actualiza los cuadros verdes del administrador
         inputMonto.value = "";
         document.getElementById('ref_pago').value = "";
     }
