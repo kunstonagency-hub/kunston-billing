@@ -32,7 +32,7 @@
         /* Salto de página estricto para que la Hoja 2 pase abajo en el PDF */
         .html2pdf__page-break { display: block; height: 0; page-break-before: always; }
         
-        /* EL TRUCO MÁGICO: Esta clase elimina los márgenes temporalmente SOLO cuando toma la foto del PDF */
+        /* EL TRUCO MÁGICO: Elimina los márgenes temporalmente SOLO cuando toma la foto del PDF */
         .generando-pdf #factura-container,
         .generando-pdf #recibo-container {
             margin: 0 !important;
@@ -51,7 +51,7 @@
     <div class="max-w-[210mm] mx-auto mb-4 mt-8 no-print bg-white p-6 rounded-xl shadow-sm border-l-8 border-[#003153]">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Panel de Control Kunston</h2>
-            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold">v5.3 Master</span>
+            <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-bold">v5.4 Master</span>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
@@ -285,7 +285,6 @@
     </div>
 
 <script>
-    // 1. CONEXIÓN Y GLOBALES
     const SUPABASE_URL = 'https://ydplbvargkztuncrmawn.supabase.co'; 
     const SUPABASE_KEY = 'sb_publishable_zrErxvRH8Ac8NG0iRKm_qA_r18Uk9Nk';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -293,7 +292,6 @@
     let globalTotalFactura = 0;
     let globalAbonadoPrevio = 0;
 
-    // 2. SEGURIDAD
     async function verificarSeguridad() {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) { window.location.replace('login.html'); }
@@ -306,7 +304,6 @@
         obtenerTasaBCV(); 
     };
 
-    // 3. UI Y CÁLCULO
     function actualizarDocumento() {
         const tipo = document.getElementById('tipo_doc').value;
         document.getElementById('titulo_factura').innerText = tipo;
@@ -360,7 +357,6 @@
         document.getElementById('bs_display_area').classList.toggle('hidden', !document.getElementById('check_bs').checked);
     }
 
-    // 4. BASE DE DATOS
     async function generarCorrelativo() {
         const { data } = await supabaseClient.from('facturas').select('id').order('id', { ascending: false }).limit(1);
         let num = (data && data.length > 0) ? data[0].id + 1 : 1;
@@ -416,7 +412,7 @@
 
         calcularTodo();
         
-        // Cargar Contabilidad de Abonos
+        // Cargar Contabilidad
         globalTotalFactura = parseFloat(data.monto_usd);
         const { data: recibos } = await supabaseClient.from('recibos').select('monto_pagado_usd').eq('cliente_nombre', data.cliente_nombre);
         globalAbonadoPrevio = recibos ? recibos.reduce((acc, r) => acc + parseFloat(r.monto_pagado_usd), 0) : 0;
@@ -432,7 +428,6 @@
         document.getElementById('val_pendiente').innerText = `$${pendiente.toFixed(2)}`;
     }
 
-    // 5. EXPORTACIÓN PDF CON TRUCO ANTI-CORTES
     async function generarReciboPago() {
         const inputMonto = document.getElementById('monto_abono_input');
         let montoValor = parseFloat(inputMonto.value);
@@ -449,6 +444,12 @@
         const totalPagadoHoy = globalAbonadoPrevio + montoUSD;
         const saldoPendiente = globalTotalFactura - totalPagadoHoy;
 
+        // --- LÓGICA PARA MOSTRAR BS AL LADO DE LA REFERENCIA ---
+        let textoReferencia = ref || "Sin referencia";
+        if (metodo === "Pago Móvil") {
+            textoReferencia += ` | ${montoValor.toLocaleString('es-VE', {minimumFractionDigits: 2})} Bs.`;
+        }
+
         // Inyectar en Hoja 2
         document.getElementById('recibo_cliente').innerText = nombre;
         document.getElementById('recibo_monto_hoy').innerText = `$${montoUSD.toFixed(2)}`;
@@ -456,7 +457,7 @@
         document.getElementById('recibo_saldo_pendiente').innerText = `$${saldoPendiente.toFixed(2)}`;
         document.getElementById('recibo_factura_ref').innerText = `${facturaRef}`;
         document.getElementById('recibo_metodo').innerText = metodo;
-        document.getElementById('recibo_referencia').innerText = ref || "Sin referencia";
+        document.getElementById('recibo_referencia').innerText = textoReferencia;
 
         // Guardar Abono en BD
         const { error } = await supabaseClient.from('recibos').insert([{
@@ -483,7 +484,7 @@
         
         await html2pdf().set(opt).from(document.getElementById('pdf-wrapper')).save();
         
-        // --- RESTAURAR LA PANTALLA ---
+        // --- RESTAURAR PANTALLA ---
         document.body.classList.remove('generando-pdf');
         
         globalAbonadoPrevio = totalPagadoHoy;
@@ -541,7 +542,7 @@
         const hoja1 = document.getElementById('factura-container');
         await html2pdf().set(opt).from(hoja1).save();
         
-        // --- RESTAURAR LA PANTALLA ---
+        // --- RESTAURAR PANTALLA ---
         document.body.classList.remove('generando-pdf');
         setTimeout(() => location.reload(), 1500);
     }
